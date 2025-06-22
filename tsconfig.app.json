@@ -19,8 +19,12 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": "./src",
     "paths": {
-      "@types/*": ["types/*"],
-      "@components/*": ["components/*"]
+      "@customTypes/*": ["customTypes/*"],
+      "@components/*": ["components/*"],
+      "@services/*": ["services/*"],
+      "@hooks/*": ["hooks/*"],
+      "@utils/*": ["utils/*"],
+      "@assets/*": ["assets/*"]
     }
   },
   "include": ["src"]

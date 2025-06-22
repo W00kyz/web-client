@@ -3,43 +3,65 @@ import storybook from "eslint-plugin-storybook";
 
 import js from "@eslint/js";
 import globals from "globals";
-import react from "eslint-plugin-react";
+import reactPlugin from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
+import importPlugin from "eslint-plugin-import";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config({ ignores: ["dist"] }, {
-  extends: [
-    js.configs.recommended,
-    ...tseslint.configs.recommended,
-    "plugin:react/recommended",
-    "prettier",
-  ],
-  files: ["**/*.{ts,tsx}"],
-  languageOptions: {
-    ecmaVersion: 2020,
-    sourceType: "module",
-    globals: globals.browser,
-    parserOptions: {
-      ecmaFeatures: { jsx: true },
-    },
-  },
+// Cria o config do React como objeto (não como string!)
+const reactRecommended = {
   plugins: {
-    react,
-    "react-hooks": reactHooks,
-    "react-refresh": reactRefresh,
+    react: reactPlugin,
   },
   rules: {
-    ...react.configs.recommended.rules,
-    ...reactHooks.configs.recommended.rules,
-    "react-refresh/only-export-components": [
-      "warn",
-      { allowConstantExport: true },
-    ],
+    ...reactPlugin.configs["jsx-runtime"].rules,
   },
   settings: {
     react: {
       version: "detect",
     },
   },
-}, storybook.configs["flat/recommended"]);
+};
+
+export default tseslint.config(
+  { ignores: ["dist"] },
+
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+
+  reactRecommended,
+
+  storybook.configs["flat/recommended"],
+
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: "module",
+      globals: globals.browser,
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+      },
+    },
+    plugins: {
+      "react-hooks": reactHooks,
+      "react-refresh": reactRefresh,
+      import: importPlugin,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
+    },
+    settings: {
+      "import/resolver": {
+        typescript: {
+          project: "./tsconfig.json",
+        },
+      },
+    },
+  }
+);

@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import { FileUpload } from "@components/FileUpload/FileUpload";
+import { FileUpload } from "@components/FileUpload";
 
 const App = () => {
   return (
