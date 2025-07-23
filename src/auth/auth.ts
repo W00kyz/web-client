@@ -18,9 +18,11 @@ export const signInWithGoogle = async () => {
     return setPersistence(firebaseAuth, browserSessionPersistence).then(
       async () => {
         const result = await signInWithPopup(firebaseAuth, googleProvider);
+        const token = await result.user.getIdToken();
         return {
           success: true,
           user: result.user,
+          token: token,
           error: null,
         };
       }
@@ -67,9 +69,11 @@ export async function signInWithCredentials(email: string, password: string) {
           email,
           password
         );
+        const token = await userCredential.user.getIdToken();
         return {
           success: true,
           user: userCredential.user,
+          token: token,
           error: null,
         };
       }

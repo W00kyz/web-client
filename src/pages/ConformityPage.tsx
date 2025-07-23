@@ -8,7 +8,7 @@ import Section from "../components/Section";
 import { openPdfInNewTab } from "@utils/pdfUtils";
 import { mockEmployees } from "@utils/mockEmployees";
 import PdfReport from "@components/pdf/PDFReport";
-import { PDFPreview } from "@components/pdf/PDFPreview";
+import { useSession } from "../SessionContext";
 
 const fileLabels = [
   "Lista de Funcionários",
@@ -22,6 +22,7 @@ const ConformityPage = () => {
   const [files, setFiles] = useState<Record<string, File | null>>(
     Object.fromEntries(fileLabels.map((label) => [label, null]))
   );
+  const user = useSession();
 
   const handleFileChange = (label: string, file: File | null) => {
     setFiles((prev) => ({ ...prev, [label]: file }));
@@ -39,7 +40,10 @@ const ConformityPage = () => {
     }
 
     try {
-      const response = await fetch("http://localhost/upload-pdfs", {
+      const response = await fetch("http://localhost/report/upload", {
+        headers: {
+          Authorization: `Bearer ${user.session?.user.token}`,
+        },
         method: "POST",
         body: formData,
       });

@@ -47,6 +47,7 @@ export default function SignIn() {
                 name: result.user.displayName || "",
                 email: result.user.email || "",
                 image: result.user.photoURL || "",
+                token: result.token || "",
               },
             };
             setSession(userSession);
