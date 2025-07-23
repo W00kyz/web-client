@@ -1,45 +1,70 @@
-import * as React from "react";
-import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import FileInput from "../components/FileInput";
+import { useState } from "react";
+import Section from "../components/Section";
+
+import { openPdfInNewTab } from "@utils/pdfUtils";
+import { mockEmployees } from "@utils/mockEmployees";
+import PdfReport from "@components/pdf/PDFReport";
+import { PDFPreview } from "@components/pdf/PDFPreview";
+
+const fileLabels = [
+  "Lista de Funcionários",
+  "Lista de Substitutos",
+  "Cartão de Pontos",
+  "Recibos de Entrega de Cesta Básica",
+  "Vale-Transporte",
+];
 
 const ConformityPage = () => {
-  const [files, setFiles] = React.useState<(File | null)[]>([
-    null,
-    null,
-    null,
-    null,
-    null,
-  ]);
+  const [files, setFiles] = useState<Record<string, File | null>>(
+    Object.fromEntries(fileLabels.map((label) => [label, null]))
+  );
 
-  const handleFileChange = (index: number, file: File | null) => {
-    const newFiles = [...files];
-    newFiles[index] = file;
-    setFiles(newFiles);
+  const handleFileChange = (label: string, file: File | null) => {
+    setFiles((prev) => ({ ...prev, [label]: file }));
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    console.log("Arquivos enviados:", files);
-    alert("Arquivos enviados com sucesso!");
+
+    const formData = new FormData();
+    for (const label of fileLabels) {
+      const file = files[label];
+      if (file) {
+        formData.append(label, file);
+      }
+    }
+
+    try {
+      const response = await fetch("http://localhost/upload-pdfs", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Erro na resposta");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Erro ao enviar arquivos:", error);
+      await openPdfInNewTab(<PdfReport employees={mockEmployees} />);
+    }
   };
 
   return (
     <PageContainer>
-      <Typography variant="h5" mb={2}>
-        Upload de Documentos
-      </Typography>
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Section title="Upload de Documentos">
         <Box component="form" onSubmit={handleSubmit} noValidate>
-          {[...Array(5)].map((_, idx) => (
-            <Box key={idx} mb={2}>
+          {fileLabels.map((label) => (
+            <Box key={label} mb={2}>
               <FileInput
-                label={`Documento ${idx + 1}`}
-                file={files[idx]}
-                onChange={(file) => handleFileChange(idx, file)}
+                label={label}
+                file={files[label]}
+                onChange={(file) => handleFileChange(label, file)}
                 accept="application/pdf,image/*"
               />
             </Box>
@@ -48,7 +73,10 @@ const ConformityPage = () => {
             Enviar
           </Button>
         </Box>
-      </Paper>
+      </Section>
+      {/* <Section>
+        <PDFPreview document={<PdfReport employees={mockEmployees} />} />
+      </Section> */}
     </PageContainer>
   );
 };
