@@ -16,16 +16,19 @@ const headers = [
 ];
 
 interface Employee {
-  id: number;
   nome: string;
   situacao: string;
   substituto: boolean;
-  recibo: boolean;
-  assinatura: boolean;
-  fgts: boolean;
-  inss: boolean;
-  vt: boolean;
+  tem_recibo: boolean;
+  tem_assinatura: boolean;
   observacao: string;
+  FGTS: boolean;
+  INSS: boolean;
+  VT: boolean;
+  total_horas: string;
+  data_inicio: string;
+  data_fim: string;
+  id?: number; // opcional, se não vier do backend
 }
 
 interface PdfReportProps {
@@ -55,16 +58,16 @@ const PdfReport = ({ employees }: PdfReportProps) => {
     return { name, width };
   });
 
-  const rows = employees.map((e) => ({
-    ID: e.id,
+  const rows = employees.map((e, index) => ({
+    ID: index + 1,
     Nome: e.nome,
     Situação: e.situacao,
     "Subst.": e.substituto ? "Sim" : "Não",
-    Recibo: e.recibo ? "Sim" : "Não",
-    "Assin.": e.assinatura ? "Sim" : "Não",
-    FGTS: e.fgts ? "Sim" : "Não",
-    INSS: e.inss ? "Sim" : "Não",
-    VT: e.vt ? "Sim" : "Não",
+    Recibo: e.tem_recibo ? "Sim" : "Não",
+    "Assin.": e.tem_assinatura ? "Sim" : "Não",
+    FGTS: e.FGTS ? "Sim" : "Não",
+    INSS: e.INSS ? "Sim" : "Não",
+    VT: e.VT ? "Sim" : "Não",
   }));
 
   const hasObservations = employees.some((e) => e.observacao?.trim());
@@ -73,17 +76,17 @@ const PdfReport = ({ employees }: PdfReportProps) => {
     <Document>
       <ReportCover />
       <ReportSummary />
-      <Page size={"A4"} style={styles.page}>
+      <Page size="A4" style={styles.page}>
         <Table fields={fields} rows={rows} />
       </Page>
       {hasObservations && (
-        <Page size={"A4"} style={styles.page}>
+        <Page size="A4" style={styles.page}>
           <Text style={styles.title}>Observações</Text>
-          {employees.map((e) =>
+          {employees.map((e, index) =>
             e.observacao?.trim() ? (
-              <Text key={e.id} style={styles.text}>
+              <Text key={index} style={styles.text}>
                 <Text style={{ fontWeight: "bold" }}>
-                  {e.nome} (ID {e.id}):{" "}
+                  {e.nome} (ID {index + 1}):{" "}
                 </Text>
                 {e.observacao}
               </Text>
