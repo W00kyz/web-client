@@ -1,78 +1,102 @@
-import type { Session } from "@toolpad/core/AppProvider";
+import {
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  signInWithPopup,
+  setPersistence,
+  browserSessionPersistence,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+import { firebaseAuth } from "./firebaseConfig";
 
-export async function signInWithCredentials({
-  email,
-  password,
-}: {
-  email: string;
-  password: string;
-}): Promise<{ success: boolean; user?: Session["user"]; error?: string }> {
+const googleProvider = new GoogleAuthProvider();
+const githubProvider = new GithubAuthProvider();
+
+// Sign in with Google functionality
+export const signInWithGoogle = async () => {
   try {
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      return { success: false, error: "Credenciais incorretas" };
-    }
-
-    const token = response.headers
-      .get("Authorization")
-      ?.replace(/^Bearer\s+/i, "");
-    const data = await response.json();
-
-    if (!token && !data.token) {
-      return { success: false, error: "Token JWT não encontrado" };
-    }
-
-    const finalToken = token ?? data.token;
-
-    sessionStorage.setItem("token", finalToken);
-    sessionStorage.setItem("user", JSON.stringify(data.user));
-
+    return setPersistence(firebaseAuth, browserSessionPersistence).then(
+      async () => {
+        const result = await signInWithPopup(firebaseAuth, googleProvider);
+        return {
+          success: true,
+          user: result.user,
+          error: null,
+        };
+      }
+    );
+  } catch (error: any) {
     return {
-      success: true,
-      user: {
-        id: data.user.id ?? null,
-        name: data.user.name ?? null,
-        email: data.user.email ?? null,
-        image: data.user.image ?? null,
-      },
+      success: false,
+      user: null,
+      error: error.message,
     };
-  } catch {
-    return { success: false, error: "Erro na requisição" };
+  }
+};
+
+// Sign in with GitHub functionality
+export const signInWithGithub = async () => {
+  try {
+    return setPersistence(firebaseAuth, browserSessionPersistence).then(
+      async () => {
+        const result = await signInWithPopup(firebaseAuth, githubProvider);
+        return {
+          success: true,
+          user: result.user,
+          error: null,
+        };
+      }
+    );
+  } catch (error: any) {
+    return {
+      success: false,
+      user: null,
+      error: error.message,
+    };
+  }
+};
+
+// Sign in with email and password
+
+export async function signInWithCredentials(email: string, password: string) {
+  try {
+    return setPersistence(firebaseAuth, browserSessionPersistence).then(
+      async () => {
+        const userCredential = await signInWithEmailAndPassword(
+          firebaseAuth,
+          email,
+          password
+        );
+        return {
+          success: true,
+          user: userCredential.user,
+          error: null,
+        };
+      }
+    );
+  } catch (error: any) {
+    return {
+      success: false,
+      user: null,
+      error: error.message || "Failed to sign in with email/password",
+    };
   }
 }
 
-export async function mockSignInWithCredentials({
-  email,
-  password,
-}: {
-  email: string;
-  password: string;
-}): Promise<{ success: boolean; user?: Session["user"]; error?: string }> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      if (password === "password") {
-        const user = {
-          id: "123",
-          name: "Mock User",
-          email,
-          image: "https://i.pravatar.cc/150?u=mockuser",
-        };
-        sessionStorage.setItem("token", "mock-token-123");
-        sessionStorage.setItem("user", JSON.stringify(user));
-        resolve({ success: true, user });
-      } else {
-        resolve({ success: false, error: "Credenciais incorretas" });
-      }
-    }, 1000);
-  });
-}
+// Sign out functionality
+export const firebaseSignOut = async () => {
+  try {
+    await signOut(firebaseAuth);
+    return { success: true };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
 
-export function signOut() {
-  sessionStorage.removeItem("token");
-  sessionStorage.removeItem("user");
-}
+// Auth state observer
+export const onAuthStateChanged = (callback: (user: any) => void) => {
+  return firebaseAuth.onAuthStateChanged(callback);
+};
