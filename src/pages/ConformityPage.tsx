@@ -11,11 +11,11 @@ import PdfReport from "@components/pdf/PDFReport";
 import { useSession } from "../SessionContext";
 
 const fileLabels = [
-  "Lista de Funcionários",
-  "Lista de Substitutos",
-  "Cartão de Pontos",
-  "Recibos de Entrega de Cesta Básica",
-  "Vale-Transporte",
+  "funcionarios",
+  "funcionarios_substitutos",
+  "cartao_pontos",
+  "cesta",
+  "vt",
 ];
 
 const ConformityPage = () => {
@@ -40,7 +40,7 @@ const ConformityPage = () => {
     }
 
     try {
-      const response = await fetch("http://localhost/report/upload", {
+      const response = await fetch("http://localhost:3000/report/upload", {
         headers: {
           Authorization: `Bearer ${user.session?.user.token}`,
         },
@@ -50,9 +50,9 @@ const ConformityPage = () => {
 
       if (!response.ok) throw new Error("Erro na resposta");
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      const { data } = await response.json();
+
+      await openPdfInNewTab(<PdfReport employees={data} />);
     } catch (error) {
       console.error("Erro ao enviar arquivos:", error);
       await openPdfInNewTab(<PdfReport employees={mockEmployees} />);
