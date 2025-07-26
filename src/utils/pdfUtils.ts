@@ -1,4 +1,4 @@
-import { pdf, Document } from "@react-pdf/renderer";
+import { pdf, Document } from '@react-pdf/renderer';
 
 export async function openPdfInNewTab(
   document: React.ReactElement<typeof Document>
@@ -7,6 +7,6 @@ export async function openPdfInNewTab(
   asPdf.updateContainer(document);
   const blob = await asPdf.toBlob();
   const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
+  window.open(url, '_blank');
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }

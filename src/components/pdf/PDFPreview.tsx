@@ -1,4 +1,4 @@
-import { PDFViewer } from "@react-pdf/renderer";
+import { PDFViewer } from '@react-pdf/renderer';
 
 interface PDFPreviewProps {
   document: React.ReactElement;
@@ -6,6 +6,6 @@ interface PDFPreviewProps {
 
 export const PDFPreview = ({ document }: PDFPreviewProps) => {
   return (
-    <PDFViewer style={{ width: "100%", height: "100vh" }}>{document}</PDFViewer>
+    <PDFViewer style={{ width: '100%', height: '100vh' }}>{document}</PDFViewer>
   );
 };

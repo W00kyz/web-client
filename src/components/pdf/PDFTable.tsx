@@ -1,14 +1,14 @@
-import React, { ReactNode } from "react";
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
+import React, { ReactNode } from 'react';
+import { View, Text, StyleSheet } from '@react-pdf/renderer';
 
 interface Field {
   name: string;
   width: string | number;
 }
 
-interface TableProps {
+interface TableProps<T> {
   fields: Field[];
-  rows: Record<string, any>[];
+  rows: T[];
   children?: ReactNode;
 }
 
@@ -16,9 +16,9 @@ interface TableHeaderProps {
   fields: Field[];
 }
 
-interface TableRowProps {
+interface TableRowProps<T> {
   fields: Field[];
-  data: Record<string, any>;
+  data: T;
   index: number;
 }
 
@@ -28,74 +28,89 @@ interface TableFooterProps {
 
 const styles = StyleSheet.create({
   table: {
-    width: "auto",
+    width: 'auto',
     maxWidth: 500,
-    alignSelf: "center",
+    alignSelf: 'center',
   },
   tableRow: {
-    flexDirection: "row",
+    flexDirection: 'row',
     fontSize: 10,
     paddingVertical: 4,
   },
   tableCol: {
     paddingHorizontal: 4,
-    textAlign: "center",
+    textAlign: 'center',
   },
   header: {
-    backgroundColor: "#3b5998", // azul escuro
-    color: "#fff",
-    fontWeight: "bold",
+    backgroundColor: '#3b5998',
+    color: '#fff',
+    fontWeight: 'bold',
   },
   footer: {
-    backgroundColor: "#dbe9f4", // azul clarinho
-    fontStyle: "italic",
+    backgroundColor: '#dbe9f4',
+    fontStyle: 'italic',
   },
   rowEven: {
-    backgroundColor: "#e6f0fa", // azul bem claro
+    backgroundColor: '#e6f0fa',
   },
   rowOdd: {
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
   },
 });
 
-// Table
-export const Table: React.FC<TableProps> = ({ fields, rows, children }) => (
-  <View style={styles.table}>
-    <TableHeader fields={fields} />
-    {rows.map((row, i) => (
-      <TableRow key={i} fields={fields} data={row} index={i} />
-    ))}
-    {children && <TableFooter>{children}</TableFooter>}
-  </View>
-);
+// Type guard para garantir que data é objeto com string keys
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
 
-// TableHeader
+export function Table<T>(props: TableProps<T>) {
+  const { fields, rows, children } = props;
+
+  return (
+    <View style={styles.table}>
+      <TableHeader fields={fields} />
+      {rows.map((row, i) => (
+        <TableRow key={i} fields={fields} data={row} index={i} />
+      ))}
+      {children && <TableFooter>{children}</TableFooter>}
+    </View>
+  );
+}
+
 export const TableHeader: React.FC<TableHeaderProps> = ({ fields }) => (
-  <View style={[styles.tableRow, styles.header]}>
+  <View style={{ ...styles.tableRow, ...styles.header }} fixed>
     {fields.map(({ name, width }, i) => (
-      <View style={[styles.tableCol, { width }]} key={i}>
-        <Text style={{ color: "#fff" }}>{name}</Text>
+      <View style={{ ...styles.tableCol, width }} key={i}>
+        <Text style={{ color: '#fff' }}>{name}</Text>
       </View>
     ))}
   </View>
 );
 
-// TableRow
-export const TableRow: React.FC<TableRowProps> = ({ fields, data, index }) => {
+export function TableRow<T>(props: TableRowProps<T>) {
+  const { fields, data, index } = props;
   const rowStyle = index % 2 === 0 ? styles.rowEven : styles.rowOdd;
 
   return (
-    <View style={[styles.tableRow, rowStyle]} wrap={false}>
-      {fields.map(({ name, width }, i) => (
-        <View style={[styles.tableCol, { width }]} key={i}>
-          <Text>{data[name]}</Text>
-        </View>
-      ))}
+    <View style={{ ...styles.tableRow, ...rowStyle }} wrap={false}>
+      {fields.map(({ name, width }, i) => {
+        let value = '';
+
+        if (isRecord(data) && name in data) {
+          const val = data[name];
+          value = String(val ?? '');
+        }
+
+        return (
+          <View style={{ ...styles.tableCol, width }} key={i}>
+            <Text>{value}</Text>
+          </View>
+        );
+      })}
     </View>
   );
-};
+}
 
-// TableFooter
 export const TableFooter: React.FC<TableFooterProps> = ({ children }) => (
-  <View style={[styles.tableRow, styles.footer]}>{children}</View>
+  <View style={{ ...styles.tableRow, ...styles.footer }}>{children}</View>
 );

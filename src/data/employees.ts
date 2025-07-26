@@ -1,4 +1,3 @@
-'use client';
 import { DataModel, DataSource, DataSourceCache } from '@toolpad/core/Crud';
 import { z } from 'zod';
 
@@ -82,13 +81,19 @@ export const employeesDataSource: DataSource<Employee> = {
 
           switch (operator) {
             case 'contains':
-              return String(employeeValue).toLowerCase().includes(String(value).toLowerCase());
+              return String(employeeValue)
+                .toLowerCase()
+                .includes(String(value).toLowerCase());
             case 'equals':
               return employeeValue === value;
             case 'startsWith':
-              return String(employeeValue).toLowerCase().startsWith(String(value).toLowerCase());
+              return String(employeeValue)
+                .toLowerCase()
+                .startsWith(String(value).toLowerCase());
             case 'endsWith':
-              return String(employeeValue).toLowerCase().endsWith(String(value).toLowerCase());
+              return String(employeeValue)
+                .toLowerCase()
+                .endsWith(String(value).toLowerCase());
             case '>':
               return (employeeValue as number) > value;
             case '<':
@@ -128,7 +133,9 @@ export const employeesDataSource: DataSource<Employee> = {
   getOne: async (employeeId) => {
     const employeesStore = getEmployeesStore();
 
-    const employeeToShow = employeesStore.find((employee) => employee.id === Number(employeeId));
+    const employeeToShow = employeesStore.find(
+      (employee) => employee.id === Number(employeeId)
+    );
 
     if (!employeeToShow) {
       throw new Error('Employee not found');
@@ -139,7 +146,11 @@ export const employeesDataSource: DataSource<Employee> = {
     const employeesStore = getEmployeesStore();
 
     const newEmployee = {
-      id: employeesStore.reduce((max, employee) => Math.max(max, employee.id), 0) + 1,
+      id:
+        employeesStore.reduce(
+          (max, employee) => Math.max(max, employee.id),
+          0
+        ) + 1,
       ...data,
     } as Employee;
 
@@ -159,7 +170,7 @@ export const employeesDataSource: DataSource<Employee> = {
           return updatedEmployee;
         }
         return employee;
-      }),
+      })
     );
 
     if (!updatedEmployee) {
@@ -170,16 +181,24 @@ export const employeesDataSource: DataSource<Employee> = {
   deleteOne: async (employeeId) => {
     const employeesStore = getEmployeesStore();
 
-    setEmployeesStore(employeesStore.filter((employee) => employee.id !== Number(employeeId)));
+    setEmployeesStore(
+      employeesStore.filter((employee) => employee.id !== Number(employeeId))
+    );
   },
   validate: z.object({
-    name: z.string({ required_error: 'Name is required' }).nonempty('Name is required'),
-    age: z.number({ required_error: 'Age is required' }).min(18, 'Age must be at least 18'),
+    name: z
+      .string({ required_error: 'Name is required' })
+      .nonempty('Name is required'),
+    age: z
+      .number({ required_error: 'Age is required' })
+      .min(18, 'Age must be at least 18'),
     joinDate: z
       .string({ required_error: 'Join date is required' })
       .nonempty('Join date is required'),
     role: z.enum(['Market', 'Finance', 'Development'], {
-      errorMap: () => ({ message: 'Role must be "Market", "Finance" or "Development"' }),
+      errorMap: () => ({
+        message: 'Role must be "Market", "Finance" or "Development"',
+      }),
     }),
   })['~standard'].validate,
 };

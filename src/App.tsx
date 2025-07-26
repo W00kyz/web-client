@@ -1,42 +1,42 @@
-import * as React from "react";
-import { useNavigate, Outlet } from "react-router";
-import { ReactRouterAppProvider } from "@toolpad/core/react-router";
-import type { Authentication, Navigation } from "@toolpad/core/AppProvider";
-import SessionContext, { Session } from "./SessionContext";
-import ptBr from "./locales/ptbr";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import { createTheme } from "@mui/material";
-import type { User } from "firebase/auth";
+import * as React from 'react';
+import { Outlet } from 'react-router';
+import { ReactRouterAppProvider } from '@toolpad/core/react-router';
+import type { Authentication, Navigation } from '@toolpad/core/AppProvider';
+import SessionContext, { Session } from './hooks/useSession';
+import ptBr from './locales/ptbr';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import { createTheme } from '@mui/material';
+import type { User } from 'firebase/auth';
 import {
   firebaseSignOut,
   onAuthStateChanged,
   signInWithGoogle,
-} from "../src/auth/auth";
+} from '../src/auth/auth';
 
 const NAVIGATION: Navigation = [
-  { kind: "header", title: "Main items" },
-  { title: "Dashboard", icon: <DashboardIcon /> },
-  { title: "Conformidade", icon: <AssignmentIcon />, segment: "conformity" },
+  { kind: 'header', title: 'Main items' },
+  { title: 'Dashboard', icon: <DashboardIcon /> },
+  { title: 'Conformidade', icon: <AssignmentIcon />, segment: 'conformity' },
 ];
-const BRANDING = { title: "VeraAI", logo: "" };
+const BRANDING = { title: 'VeraAI', logo: '' };
 
-const lightAppBarColor = "#0D2B70";
-const darkAppBarColor = "#0D2B70";
+const lightAppBarColor = '#0D2B70';
+const darkAppBarColor = '#0D2B70';
 
 const lightTheme = createTheme({
   palette: {
-    mode: "light",
+    mode: 'light',
   },
   components: {
     MuiAppBar: {
-      defaultProps: { color: "primary", enableColorOnDark: true },
+      defaultProps: { color: 'primary', enableColorOnDark: true },
       styleOverrides: {
         root: {
           backgroundColor: lightAppBarColor,
-          color: "#fff",
-          "& .MuiTypography-root, & svg": {
-            color: "#fff",
+          color: '#fff',
+          '& .MuiTypography-root, & svg': {
+            color: '#fff',
           },
         },
       },
@@ -46,19 +46,19 @@ const lightTheme = createTheme({
 
 const darkTheme = createTheme({
   palette: {
-    mode: "dark",
+    mode: 'dark',
   },
   components: {
     MuiAppBar: {
       styleOverrides: {
         colorPrimary: {
-          color: "#ffffff",
+          color: '#ffffff',
         },
         root: {
           backgroundColor: darkAppBarColor,
-          color: "#fff",
-          "& .MuiTypography-root, & svg": {
-            color: "#fff",
+          color: '#fff',
+          '& .MuiTypography-root, & svg': {
+            color: '#fff',
           },
         },
       },
@@ -91,9 +91,9 @@ export default function App() {
       if (user) {
         setSession({
           user: {
-            name: user.displayName || "",
-            email: user.email || "",
-            image: user.photoURL || "",
+            name: user.displayName || '',
+            email: user.email || '',
+            image: user.photoURL || '',
           },
         });
       } else {
