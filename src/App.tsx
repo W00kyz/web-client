@@ -4,7 +4,6 @@ import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import type { Authentication, Navigation } from '@toolpad/core/AppProvider';
 import SessionContext, { Session } from './hooks/useSession';
 import ptBr from './locales/ptbr';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import { createTheme } from '@mui/material';
 import type { User } from 'firebase/auth';
@@ -13,36 +12,41 @@ import {
   onAuthStateChanged,
   signInWithGoogle,
 } from '../src/auth/auth';
+import { ptBR as datePtBR } from '@mui/x-date-pickers/locales';
+import { ptBR as gridPtBr } from '@mui/x-data-grid/locales';
 
 const NAVIGATION: Navigation = [
   { kind: 'header', title: 'Main items' },
-  { title: 'Dashboard', icon: <DashboardIcon /> },
-  { title: 'Conformidade', icon: <AssignmentIcon />, segment: 'conformity' },
+  { title: 'Conformidade', icon: <AssignmentIcon /> },
 ];
 const BRANDING = { title: 'VeraAI', logo: '' };
 
 const lightAppBarColor = '#0D2B70';
 const darkAppBarColor = '#0D2B70';
 
-const lightTheme = createTheme({
-  palette: {
-    mode: 'light',
-  },
-  components: {
-    MuiAppBar: {
-      defaultProps: { color: 'primary', enableColorOnDark: true },
-      styleOverrides: {
-        root: {
-          backgroundColor: lightAppBarColor,
-          color: '#fff',
-          '& .MuiTypography-root, & svg': {
+const lightTheme = createTheme(
+  {
+    palette: {
+      mode: 'light',
+    },
+    components: {
+      MuiAppBar: {
+        defaultProps: { color: 'primary', enableColorOnDark: true },
+        styleOverrides: {
+          root: {
+            backgroundColor: lightAppBarColor,
             color: '#fff',
+            '& .MuiTypography-root, & svg': {
+              color: '#fff',
+            },
           },
         },
       },
     },
   },
-});
+  datePtBR,
+  gridPtBr
+);
 
 const darkTheme = createTheme({
   palette: {
@@ -87,13 +91,14 @@ export default function App() {
   );
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged((user: User | null) => {
+    const unsubscribe = onAuthStateChanged(async (user: User | null) => {
       if (user) {
         setSession({
           user: {
             name: user.displayName || '',
             email: user.email || '',
             image: user.photoURL || '',
+            token: (await user.getIdToken()) || '',
           },
         });
       } else {

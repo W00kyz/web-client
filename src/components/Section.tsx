@@ -47,7 +47,7 @@ const Section = ({
         </IconButton>
       </Box>
 
-      <Collapse in={open}>
+      <Collapse in={open} onClick={(e) => e.stopPropagation()}>
         <Box mt={2}>{children}</Box>
       </Collapse>
     </Paper>

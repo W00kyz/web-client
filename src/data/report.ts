@@ -26,19 +26,39 @@ export interface ReportDataSource
 
 export const reportDataSource: ReportDataSource = {
   fields: [
-    { field: 'id', headerName: 'ID' },
-    { field: 'nome', headerName: 'Nome' },
-    { field: 'situacao', headerName: 'Situação' },
-    { field: 'substituto', headerName: 'Substituto', type: 'boolean' },
-    { field: 'tem_recibo', headerName: 'Tem Recibo', type: 'boolean' },
-    { field: 'tem_assinatura', headerName: 'Tem Assinatura', type: 'boolean' },
-    { field: 'observacao', headerName: 'Observação' },
-    { field: 'FGTS', headerName: 'FGTS', type: 'boolean' },
-    { field: 'INSS', headerName: 'INSS', type: 'boolean' },
-    { field: 'VT', headerName: 'VT', type: 'boolean' },
-    { field: 'total_horas', headerName: 'Total Horas' },
-    { field: 'data_inicio', headerName: 'Data Início', type: 'date' },
-    { field: 'data_fim', headerName: 'Data Fim', type: 'date' },
+    { field: 'id', headerName: 'ID', width: 40 },
+    { field: 'nome', headerName: 'Nome', width: 120 },
+    { field: 'situacao', headerName: 'Situação', width: 120 },
+    {
+      field: 'substituto',
+      headerName: 'Substituto',
+      type: 'boolean',
+      width: 120,
+    },
+    {
+      field: 'tem_recibo',
+      headerName: 'Recibo',
+      type: 'boolean',
+      width: 80,
+    },
+    {
+      field: 'tem_assinatura',
+      headerName: 'Assinatura',
+      type: 'boolean',
+      width: 120,
+    },
+    { field: 'FGTS', headerName: 'FGTS', type: 'boolean', width: 80 },
+    { field: 'INSS', headerName: 'INSS', type: 'boolean', width: 80 },
+    { field: 'VT', headerName: 'VT', type: 'boolean', width: 80 },
+    { field: 'total_horas', headerName: 'Total Horas', width: 120 },
+    {
+      field: 'data_inicio',
+      headerName: 'Data Início',
+      type: 'date',
+      width: 120,
+    },
+    { field: 'data_fim', headerName: 'Data Fim', type: 'date', width: 120 },
+    { field: 'observacao', headerName: 'Observação', width: 120 },
   ],
 
   getMany: async () => {
