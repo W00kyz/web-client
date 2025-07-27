@@ -1,8 +1,9 @@
 import { Text, StyleSheet, Font } from '@react-pdf/renderer';
-import { Report } from '@datasources/report';
 import Raleway from '@assets/fonts/Raleway/static/Raleway-Regular.ttf';
 import RalewayBold from '@assets/fonts/Raleway/static/Raleway-Bold.ttf';
-import { ReportPage } from '../PDFComponents';
+import { CustomPage } from '@components/pdf/PDFComponents';
+
+import { Report } from '@datasources/report';
 
 Font.register({
   family: 'Raleway',
@@ -50,7 +51,7 @@ type Summary = {
   dataFim: string | null;
 };
 
-const summarizeReports = (reports: Report[]): Summary => {
+export const summarizeReports = (reports: Report[]): Summary => {
   let totalHoras = 0;
   let dataInicio: string | null = null;
   let dataFim: string | null = null;
@@ -88,11 +89,11 @@ type ReportSummaryProps = {
   reports: Report[];
 };
 
-const ReportSummary = ({ reports }: ReportSummaryProps) => {
+export const ReportSummaryPage = ({ reports }: ReportSummaryProps) => {
   const summary = summarizeReports(reports);
 
   return (
-    <ReportPage sectionName="Sumário">
+    <CustomPage sectionName="Sumário">
       <Text style={styles.intro}>
         Este sumário apresenta os principais dados compilados a partir da lista
         de funcionários analisada. As informações incluem contagens de
@@ -135,9 +136,6 @@ const ReportSummary = ({ reports }: ReportSummaryProps) => {
         <Text style={styles.label}>Período do Relatório: </Text>
         {summary.dataInicio ?? '-'} até {summary.dataFim ?? '-'}
       </Text>
-    </ReportPage>
+    </CustomPage>
   );
 };
-
-export { summarizeReports };
-export default ReportSummary;

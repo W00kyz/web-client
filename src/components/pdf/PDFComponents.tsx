@@ -85,7 +85,7 @@ type ReportPageProps = {
   children: React.ReactNode;
 };
 
-export const ReportPage = ({ sectionName, children }: ReportPageProps) => (
+export const CustomPage = ({ sectionName, children }: ReportPageProps) => (
   <Page size="A4" style={styles.page}>
     <PDFHeader sectionName={sectionName} />
     <View style={styles.content}>{children}</View>

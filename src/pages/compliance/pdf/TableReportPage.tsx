@@ -1,6 +1,6 @@
 import { Report } from '@datasources/report';
 import { Table } from '@components/pdf/PDFTable';
-import { ReportPage } from '@components/pdf/PDFComponents';
+import { CustomPage } from '@components/pdf/PDFComponents';
 
 const headers = [
   'ID',
@@ -18,7 +18,7 @@ interface Props {
   employees: Report[];
 }
 
-export const TableReport = ({ employees }: Props) => {
+export const TableReportPage = ({ employees }: Props) => {
   const fields = headers.map((name) => {
     const width = name === 'Nome' || name === 'Situação' ? 80 : 40;
     return { name, width };
@@ -37,8 +37,8 @@ export const TableReport = ({ employees }: Props) => {
   }));
 
   return (
-    <ReportPage sectionName="Funcionários">
+    <CustomPage sectionName="Funcionários">
       <Table fields={fields} rows={rows} />
-    </ReportPage>
+    </CustomPage>
   );
 };

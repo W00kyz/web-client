@@ -1,6 +1,6 @@
 import { Report } from '@datasources/report';
 import { Text, StyleSheet } from '@react-pdf/renderer';
-import { ReportPage } from '@components/pdf/PDFComponents';
+import { CustomPage } from '@components/pdf/PDFComponents';
 
 interface Props {
   employees: Report[];
@@ -20,8 +20,8 @@ const styles = StyleSheet.create({
   },
 });
 
-export const ReportObservations = ({ employees }: Props) => (
-  <ReportPage sectionName="Observações">
+export const ReportObservationsPage = ({ employees }: Props) => (
+  <CustomPage sectionName="Observações">
     <Text style={styles.title}>Observações</Text>
     {employees.map((e, index) =>
       e.observacao?.trim() ? (
@@ -33,5 +33,5 @@ export const ReportObservations = ({ employees }: Props) => (
         </Text>
       ) : null
     )}
-  </ReportPage>
+  </CustomPage>
 );

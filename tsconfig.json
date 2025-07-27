@@ -18,7 +18,8 @@
       "@utils/*": ["utils/*"],
       "@pages/*": ["pages/*"],
       "@components/*": ["components/*"],
-      "@assets/*": ["assets/*"]
+      "@assets/*": ["assets/*"],
+      "@constants/*": ["@constants/*"]
     }
   },
   "include": ["src", "vite-env.d.ts"],

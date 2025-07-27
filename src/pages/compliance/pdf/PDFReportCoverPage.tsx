@@ -55,13 +55,17 @@ const styles = StyleSheet.create({
   },
 });
 
-type ReportCoverProps = {
+type ReportCoverPageProps = {
   title: string;
   companyName: string;
   date: string;
 };
 
-const ReportCover = ({ title, companyName, date }: ReportCoverProps) => (
+export const ReportCoverPage = ({
+  title,
+  companyName,
+  date,
+}: ReportCoverPageProps) => (
   <Page size="A4">
     <View style={styles.container}>
       <View style={styles.titleWrapper}>
@@ -75,5 +79,3 @@ const ReportCover = ({ title, companyName, date }: ReportCoverProps) => (
     <Image src={pdf_cover} style={styles.background} />
   </Page>
 );
-
-export default ReportCover;

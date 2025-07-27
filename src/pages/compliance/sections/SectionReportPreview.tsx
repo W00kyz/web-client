@@ -1,4 +1,4 @@
-import PdfReport from '@components/pdf/conformity_report/PDFReport';
+import { PdfReportDocument } from '@pages/compliance/pdf/PDFReportDocument';
 import { PDFPreview } from '@components/pdf/PDFPreview';
 import Section from '@components/Section';
 import { Report } from '@datasources/report';
@@ -13,7 +13,7 @@ export const SectionReportPreview = ({ report }: SectionReportPreviewProps) => {
 
   return (
     <Section title="Preview do Relatório">
-      <PDFPreview document={<PdfReport employees={data} />} />
+      <PDFPreview document={<PdfReportDocument employees={data} />} />
     </Section>
   );
 };

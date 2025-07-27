@@ -1,11 +1,13 @@
 import { Document } from '@react-pdf/renderer';
-import ReportCover from './PDFReportCover';
-import ReportSummary from './PDFReportSummary';
-import { TableReport } from '@components/pdf/conformity_report/TableReport';
-import { ReportObservations } from '@components/pdf/conformity_report/ReportObservations';
+
+import { ReportCoverPage } from '@pages/compliance/pdf/PDFReportCoverPage';
+import { ReportSummaryPage } from '@pages/compliance/pdf/PDFReportSummaryPage';
+import { TableReportPage } from '@pages/compliance/pdf/TableReportPage';
+import { ReportObservationsPage } from '@pages/compliance/pdf/ReportObservationsPage';
+
 import { Report } from '@datasources/report';
 
-interface PdfReportProps {
+interface PdfReportDocumentProps {
   employees: Report[];
 }
 
@@ -28,21 +30,19 @@ const formatCurrentDate = (): string => {
   return `${months[now.getMonth()]} de ${now.getFullYear()}`;
 };
 
-const PdfReport = ({ employees }: PdfReportProps) => {
+export const PdfReportDocument = ({ employees }: PdfReportDocumentProps) => {
   const hasObservations = employees.some((e) => e.observacao?.trim());
 
   return (
     <Document>
-      <ReportCover
+      <ReportCoverPage
         title="Relatório de Conformidade"
         companyName="Exemplo S/A"
         date={formatCurrentDate()}
       />
-      <ReportSummary reports={employees} />
-      <TableReport employees={employees} />
-      {hasObservations && <ReportObservations employees={employees} />}
+      <ReportSummaryPage reports={employees} />
+      <TableReportPage employees={employees} />
+      {hasObservations && <ReportObservationsPage employees={employees} />}
     </Document>
   );
 };
-
-export default PdfReport;
