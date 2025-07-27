@@ -5,7 +5,7 @@ import App from './App';
 import Layout from './layouts/dashboard';
 import DashboardPage from './pages';
 import SignInPage from './pages/signin';
-import { ConformityPage } from '@pages/compliance/ConformityPage';
+import { ConformityPage } from '@pages/compliance/CompliancePage';
 
 const router = createBrowserRouter([
   {
