@@ -14,6 +14,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { useMutation } from '@hooks/useMutation';
 import ReactMarkdown from 'react-markdown';
+import { useSession } from '@hooks/useSession';
 
 interface Selection {
   key: string;
@@ -28,13 +29,16 @@ interface DocumentDTO {
   updated_at: string;
 }
 
-const uploadDataSource = {
+const uploadDataSource = (token: string) => ({
   createOne: async (file: File): Promise<DocumentDTO> => {
     const formData = new FormData();
     formData.append('file', file);
 
     const response = await fetch('http://localhost:8000/upload/document', {
       method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
       body: formData,
     });
 
@@ -45,22 +49,26 @@ const uploadDataSource = {
     const data = await response.json();
     return data as DocumentDTO;
   },
-};
+});
 
-const selectionDataSource = {
-  createOne: async (data: {
-    pdfIndex: number;
-    documentId: number;
-    selections: Selection[];
-  }) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log('/generate-regex payload:', data);
-        resolve(data);
-      }, 1000);
+const selectionDataSource = (token: string) => ({
+  createOne: async (data: { documentId: number; selections: Selection[] }) => {
+    const response = await fetch('http://localhost:8000/document/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
     });
+
+    if (!response.ok) {
+      throw new Error('Erro ao enviar seleções');
+    }
+
+    return await response.json();
   },
-};
+});
 
 export const PdfSelectionSection = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -76,10 +84,13 @@ export const PdfSelectionSection = () => {
 
   const [modalOpen, setModalOpen] = useState(false);
 
+  const { session } = useSession();
+  const token = session?.user?.token || '';
+
   const pendingSelection = useRef<{ index: number; text: string } | null>(null);
 
   const uploadMutation = useMutation<File, DocumentDTO>(
-    uploadDataSource.createOne,
+    uploadDataSource(token).createOne,
     {
       onSuccess: (doc) => {
         setDocuments((prev) => [...prev, doc]);
@@ -87,12 +98,12 @@ export const PdfSelectionSection = () => {
     }
   );
 
-  const selectionMutation = useMutation(selectionDataSource.createOne, {
+  const selectionMutation = useMutation(selectionDataSource(token).createOne, {
     onSuccess: () => {
-      alert('Seleções enviadas com sucesso!');
+      console.log('Seleções enviadas com sucesso!');
     },
     onError: () => {
-      alert('Erro ao enviar seleções.');
+      console.log('Erro ao enviar seleções.');
     },
   });
 
@@ -217,7 +228,6 @@ export const PdfSelectionSection = () => {
   const handleSendSelections = (docIndex: number) => {
     const documentId = documents[docIndex]?.id ?? 0;
     const dataToSend = {
-      pdfIndex: docIndex,
       documentId,
       selections: selections[docIndex] || [],
     };
