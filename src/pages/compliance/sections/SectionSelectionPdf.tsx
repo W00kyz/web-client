@@ -34,7 +34,7 @@ const uploadDataSource = (token: string) => ({
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('http://localhost:8000/upload/document', {
+    const response = await fetch('http://localhost:8000/document/upload', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -88,7 +88,7 @@ export const PdfSelectionSection = () => {
   const token = session?.user?.token || '';
 
   const pendingSelection = useRef<{ index: number; text: string } | null>(null);
-
+  console.log(session)
   const uploadMutation = useMutation<File, DocumentDTO>(
     uploadDataSource(token).createOne,
     {
