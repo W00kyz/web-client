@@ -38,7 +38,7 @@ export const ComplianceCrudPage = ({
   const [openModal, setOpenModal] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
-  const paginationModel: GridPaginationModel = { page: 0, pageSize: 100 };
+  const paginationModel: GridPaginationModel = { page: 0, pageSize: 10 };
   const sortModel: GridSortModel = [];
   const filterModel: GridFilterModel = { items: [] };
 

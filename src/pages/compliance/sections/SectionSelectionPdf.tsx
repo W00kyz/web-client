@@ -30,18 +30,20 @@ interface DocumentDTO {
 
 const uploadDataSource = {
   createOne: async (file: File): Promise<DocumentDTO> => {
-    const markdown = `# Documento ${file.name}\n\nEste é um documento mock em **markdown**.\n\nSelecione texto neste documento.`;
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: Math.floor(Math.random() * 1000),
-          user_id: 1,
-          document_md: markdown,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      }, 1000);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('http://localhost:8000/upload/document', {
+      method: 'POST',
+      body: formData,
     });
+
+    if (!response.ok) {
+      throw new Error('Erro ao fazer upload do documento');
+    }
+
+    const data = await response.json();
+    return data as DocumentDTO;
   },
 };
 
