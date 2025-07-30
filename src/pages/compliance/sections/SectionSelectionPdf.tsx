@@ -57,14 +57,17 @@ const selectionDataSource = (token: string) => ({
     documentId: number;
     selections: { key: string; values: string[]; context?: string }[];
   }) => {
-    const response = await fetch('http://localhost:8000/document/upload', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
+    const response = await fetch(
+      'http://localhost:8000/document/generate-regex',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      }
+    );
 
     if (!response.ok) {
       throw new Error('Erro ao enviar seleções');
