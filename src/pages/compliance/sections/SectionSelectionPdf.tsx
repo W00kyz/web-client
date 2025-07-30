@@ -33,49 +33,122 @@ interface DocumentDTO {
   filename?: string;
 }
 
-const uploadDataSource = (token: string) => ({
+const uploadDataSource = (_token: string) => ({
   createOne: async (file: File): Promise<DocumentDTO> => {
-    const formData = new FormData();
-    formData.append('file', file);
+    const id = Math.floor(Math.random() * 10000);
+    const now = new Date().toISOString();
+    const content = `
+# Relatório Técnico: ${file.name}
 
-    const response = await fetch(`${BASE_URL}:8000/document/upload`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
+## Introdução
 
-    if (!response.ok) {
-      throw new Error('Erro ao fazer upload do documento');
-    }
+Este documento tem como objetivo apresentar uma análise detalhada dos processos realizados durante o período de referência. Todas as informações aqui contidas foram compiladas a partir de observações práticas, relatórios operacionais e registros internos do sistema de produção.
 
-    const data = await response.json();
-    return data as DocumentDTO;
+## Metodologia
+
+A coleta de dados foi realizada diariamente ao longo de 30 dias, envolvendo três frentes principais: operações internas, controle de qualidade e suporte técnico. Cada equipe foi responsável por fornecer feedback detalhado sobre as ocorrências registradas em suas respectivas áreas.
+
+## Resultados
+
+Durante o período avaliado, observou-se uma melhora significativa na eficiência dos processos operacionais. O tempo médio de resposta às ocorrências reduziu em 12%, enquanto o índice de retrabalho caiu de 8,5% para 5,2%. Além disso, o uso adequado de recursos digitais otimizou o controle de documentos e reduziu erros de digitação em 23%.
+
+O setor de controle de qualidade identificou 14 não conformidades, das quais 12 foram solucionadas dentro do prazo. As duas restantes foram encaminhadas para a equipe de engenharia, com prazo de retorno estipulado em cinco dias úteis. Os gráficos gerados mostram uma tendência positiva de redução de falhas críticas, principalmente nos processos automatizados.
+
+## Análise
+
+Os dados apontam que a integração de novos protocolos operacionais teve impacto direto na melhoria da performance da equipe. A comunicação entre os setores também foi favorecida após a adoção de reuniões semanais com foco em metas e indicadores-chave de desempenho.
+
+Vale destacar que, mesmo com o aumento da demanda, os prazos foram respeitados em 97% dos atendimentos registrados. O uso de painéis informativos digitais contribuiu para o alinhamento rápido das tarefas e maior engajamento da equipe.
+
+## Conclusão
+
+Os resultados obtidos demonstram avanços significativos na organização dos fluxos de trabalho e no cumprimento das metas operacionais. Recomenda-se a continuidade das ações de monitoramento e a realização de treinamentos pontuais para manter o padrão de qualidade elevado.
+
+A leitura e interpretação crítica destes dados são fundamentais para a tomada de decisões estratégicas futuras. O desempenho registrado durante este ciclo poderá servir como referência para o planejamento dos próximos trimestres.
+
+## Anexos
+
+- Tabela de Indicadores
+- Gráficos de Ocorrências
+- Lista de Procedimentos Atualizados
+- Checklists de Auditoria Interna
+
+---
+
+Documento gerado em ${now}.
+`;
+
+    return new Promise((resolve) =>
+      setTimeout(() => {
+        resolve({
+          id,
+          user_id: 1,
+          document_md: content,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          filename: file.name,
+        });
+      }, 500)
+    );
   },
 });
 
-const selectionDataSource = (token: string) => ({
+// 🔁 MOCK selectionDataSource
+const selectionDataSource = (_token: string) => ({
   createOne: async (data: {
     documentId: number;
     selections: { key: string; values: string[]; context?: string }[];
   }) => {
-    const response = await fetch(`${BASE_URL}:8000/document/generate-regex`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error('Erro ao enviar seleções');
-    }
-
-    return await response.json();
+    console.log('[MOCK] Dados enviados para /document/generate-regex:', data);
+    return new Promise((resolve) =>
+      setTimeout(() => resolve({ success: true }), 500)
+    );
   },
 });
+
+// const uploadDataSource = (token: string) => ({
+//   createOne: async (file: File): Promise<DocumentDTO> => {
+//     const formData = new FormData();
+//     formData.append('file', file);
+
+//     const response = await fetch(`${BASE_URL}:8000/document/upload`, {
+//       method: 'POST',
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: formData,
+//     });
+
+//     if (!response.ok) {
+//       throw new Error('Erro ao fazer upload do documento');
+//     }
+
+//     const data = await response.json();
+//     return data as DocumentDTO;
+//   },
+// });
+
+// const selectionDataSource = (token: string) => ({
+//   createOne: async (data: {
+//     documentId: number;
+//     selections: { key: string; values: string[]; context?: string }[];
+//   }) => {
+//     const response = await fetch(`${BASE_URL}:8000/document/generate-regex`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: JSON.stringify(data),
+//     });
+
+//     if (!response.ok) {
+//       throw new Error('Erro ao enviar seleções');
+//     }
+
+//     return await response.json();
+//   },
+// });
 
 export const PdfSelectionSection = () => {
   const [, setFiles] = useState<File[]>([]);

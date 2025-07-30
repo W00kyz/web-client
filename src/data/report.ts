@@ -24,7 +24,38 @@ export interface ReportDataSource
   ) => Promise<Report>;
 }
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+const reportStore: Report[] = [
+  {
+    id: '1',
+    nome: 'João Silva',
+    situacao: 'Ativo',
+    substituto: false,
+    tem_recibo: true,
+    tem_assinatura: true,
+    observacao: 'Nenhuma',
+    FGTS: true,
+    INSS: true,
+    VT: false,
+    total_horas: '160',
+    data_inicio: '2025-07-01',
+    data_fim: '2025-07-30',
+  },
+  {
+    id: '2',
+    nome: 'Maria Souza',
+    situacao: 'Inativo',
+    substituto: true,
+    tem_recibo: false,
+    tem_assinatura: false,
+    observacao: 'Aguardando assinatura',
+    FGTS: false,
+    INSS: true,
+    VT: true,
+    total_horas: '120',
+    data_inicio: '2025-06-01',
+    data_fim: '2025-06-30',
+  },
+];
 
 export const reportDataSource: ReportDataSource = {
   fields: [
@@ -63,46 +94,51 @@ export const reportDataSource: ReportDataSource = {
     { field: 'observacao', headerName: 'Observação', width: 120 },
   ],
 
+  // ✅ Mock getMany
   getMany: async () => {
-    const response = await fetch(`${BASE_URL}:8000/reports`);
-    if (!response.ok) throw new Error('Erro ao listar relatórios');
-    const { items, itemCount } = await response.json();
-    return { items, itemCount };
+    return {
+      items: reportStore,
+      itemCount: reportStore.length,
+    };
   },
 
+  // ✅ Mock getOne
   getOne: async (id) => {
-    const response = await fetch(`${BASE_URL}:8000/reports/${id}`);
-    if (!response.ok) throw new Error('Relatório não encontrado');
-    const { data } = await response.json();
-    return data as Report;
+    const report = reportStore.find((r) => r.id === id);
+    if (!report) throw new Error('Relatório não encontrado');
+    return report;
   },
 
+  // ✅ Mock createOne
   createOne: async (files, token) => {
-    const formData = new FormData();
-    for (const label in files) {
-      const file = files[label];
-      if (file) formData.append(label, file);
-    }
-
-    const response = await fetch(`${BASE_URL}:8000/reports/upload`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) throw new Error('Erro ao enviar arquivos');
-
-    const { data } = await response.json();
-    return data as Report;
+    const newReport: Report = {
+      id: String(
+        reportStore.length > 0
+          ? Math.max(...reportStore.map((r) => Number(r.id))) + 1
+          : 1
+      ),
+      nome: 'Novo Relatório',
+      situacao: 'Pendente',
+      substituto: false,
+      tem_recibo: false,
+      tem_assinatura: false,
+      observacao: '',
+      FGTS: false,
+      INSS: false,
+      VT: false,
+      total_horas: '0',
+      data_inicio: new Date().toISOString().split('T')[0],
+      data_fim: new Date().toISOString().split('T')[0],
+    };
+    reportStore.push(newReport);
+    return newReport;
   },
 
+  // ✅ Mock deleteOne
   deleteOne: async (id) => {
-    const response = await fetch(`${BASE_URL}:8000/reports/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Erro ao deletar relatório');
+    const index = reportStore.findIndex((r) => r.id === id);
+    if (index === -1) throw new Error('Relatório não encontrado');
+    reportStore.splice(index, 1);
   },
 
   validate: z.object({
