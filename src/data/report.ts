@@ -24,6 +24,8 @@ export interface ReportDataSource
   ) => Promise<Report>;
 }
 
+const BASE_URL = import.meta.env.VITE_API_URL;
+
 export const reportDataSource: ReportDataSource = {
   fields: [
     { field: 'id', headerName: 'ID', width: 40 },
@@ -62,14 +64,14 @@ export const reportDataSource: ReportDataSource = {
   ],
 
   getMany: async () => {
-    const response = await fetch('/api/reports');
+    const response = await fetch(`${BASE_URL}/reports`);
     if (!response.ok) throw new Error('Erro ao listar relatórios');
     const { items, itemCount } = await response.json();
     return { items, itemCount };
   },
 
   getOne: async (id) => {
-    const response = await fetch(`/api/reports/${id}`);
+    const response = await fetch(`${BASE_URL}/reports/${id}`);
     if (!response.ok) throw new Error('Relatório não encontrado');
     const { data } = await response.json();
     return data as Report;
@@ -82,7 +84,7 @@ export const reportDataSource: ReportDataSource = {
       if (file) formData.append(label, file);
     }
 
-    const response = await fetch('/api/reports/upload', {
+    const response = await fetch(`${BASE_URL}/reports/upload`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -97,7 +99,7 @@ export const reportDataSource: ReportDataSource = {
   },
 
   deleteOne: async (id) => {
-    const response = await fetch(`/api/reports/${id}`, {
+    const response = await fetch(`${BASE_URL}/reports/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Erro ao deletar relatório');
