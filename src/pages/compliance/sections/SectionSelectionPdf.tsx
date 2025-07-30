@@ -16,6 +16,8 @@ import { useMutation } from '@hooks/useMutation';
 import ReactMarkdown from 'react-markdown';
 import { useSession } from '@hooks/useSession';
 
+const BASE_URL = import.meta.env.VITE_API_URL;
+
 interface Selection {
   key: string;
   values: string[];
@@ -28,6 +30,7 @@ interface DocumentDTO {
   document_md: string;
   created_at: string;
   updated_at: string;
+  filename?: string;
 }
 
 const uploadDataSource = (token: string) => ({
@@ -35,7 +38,7 @@ const uploadDataSource = (token: string) => ({
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('http://localhost:8000/document/upload', {
+    const response = await fetch(`${BASE_URL}:8000/document/upload`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -57,17 +60,14 @@ const selectionDataSource = (token: string) => ({
     documentId: number;
     selections: { key: string; values: string[]; context?: string }[];
   }) => {
-    const response = await fetch(
-      'http://localhost:8000/document/generate-regex',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      }
-    );
+    const response = await fetch(`${BASE_URL}:8000/document/generate-regex`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
 
     if (!response.ok) {
       throw new Error('Erro ao enviar seleções');
@@ -85,7 +85,7 @@ export const PdfSelectionSection = () => {
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [inputKey, setInputKey] = useState('');
   const [inputValue, setInputValue] = useState('');
-  const [currentContext, setCurrentContext] = useState(''); // ✅ Adicionado
+  const [currentContext, setCurrentContext] = useState('');
 
   const [, setCurrentText] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
@@ -103,22 +103,10 @@ export const PdfSelectionSection = () => {
   } | null>(null);
 
   const uploadMutation = useMutation<File, DocumentDTO>(
-    uploadDataSource(token).createOne,
-    {
-      onSuccess: (doc) => {
-        setDocuments((prev) => [...prev, doc]);
-      },
-    }
+    uploadDataSource(token).createOne
   );
 
-  const selectionMutation = useMutation(selectionDataSource(token).createOne, {
-    onSuccess: () => {
-      console.log('Seleções enviadas com sucesso!');
-    },
-    onError: () => {
-      console.log('Erro ao enviar seleções.');
-    },
-  });
+  const selectionMutation = useMutation(selectionDataSource(token).createOne);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(event.target.files || []).slice(0, 5);
@@ -126,7 +114,14 @@ export const PdfSelectionSection = () => {
     setDocuments([]);
     setSelections({});
     setModalOpen(true);
-    newFiles.forEach((file) => uploadMutation.mutate(file));
+
+    newFiles.forEach((file) => {
+      uploadMutation.mutate(file, {
+        onSuccess: (doc) => {
+          setDocuments((prev) => [...prev, { ...doc, filename: file.name }]);
+        },
+      });
+    });
   };
 
   const handleTextSelection = (index: number) => {
@@ -172,7 +167,7 @@ export const PdfSelectionSection = () => {
         const { index, text, context } = pendingSelection.current;
         setCurrentIndex(index);
         setCurrentText(text);
-        setCurrentContext(context || ''); // ✅ Correção aplicada
+        setCurrentContext(context || '');
         setInputKey('');
         setInputValue(text);
         setOpenDialog(true);
@@ -189,7 +184,7 @@ export const PdfSelectionSection = () => {
         currentIndex,
         inputKey.trim(),
         inputValue,
-        currentContext // ✅ Correção aplicada
+        currentContext
       );
     }
     setOpenDialog(false);
@@ -298,7 +293,7 @@ export const PdfSelectionSection = () => {
           component="label"
           disabled={uploadMutation.isLoading}
         >
-          Selecione até 5 arquivos (markdown mock upload)
+          Upload
           <input
             type="file"
             hidden
@@ -314,7 +309,7 @@ export const PdfSelectionSection = () => {
         onClose={() => setModalOpen(false)}
         fullWidth
         maxWidth="xl"
-        PaperProps={{ sx: { height: '80vh' } }}
+        slotProps={{ paper: { sx: { height: '80vh' } } }}
       >
         <DialogTitle>
           Visualização dos Documentos
@@ -330,7 +325,7 @@ export const PdfSelectionSection = () => {
           dividers
           sx={{
             display: 'flex',
-            flexWrap: 'wrap',
+            flexDirection: 'column',
             gap: 2,
             height: '100%',
             boxSizing: 'border-box',
@@ -341,120 +336,132 @@ export const PdfSelectionSection = () => {
             <Box
               key={doc.id}
               sx={{
-                flex: '1 1 45%',
                 height: 600,
                 p: 1,
                 boxSizing: 'border-box',
-                display: 'flex',
-                gap: 2,
-                flexDirection: 'row',
                 border: '1px solid #ccc',
                 borderRadius: 1,
               }}
             >
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                📄 {doc.filename ?? 'Documento'}
+              </Typography>
+
               <Box
                 sx={{
-                  flex: '1 1 60%',
-                  overflow: 'auto',
-                  border: '1px solid #999',
-                  borderRadius: 1,
-                  p: 1,
-                  cursor: 'text',
-                  userSelect: 'text',
-                }}
-                onMouseUp={() => handleTextSelection(index)}
-              >
-                <ReactMarkdown>{doc.document_md}</ReactMarkdown>
-              </Box>
-
-              <Stack
-                spacing={1}
-                sx={{
-                  flex: '1 1 40%',
-                  overflowY: 'auto',
-                  border: '1px solid #999',
-                  borderRadius: 1,
-                  p: 1,
-                  maxHeight: 580,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  gap: 2,
+                  height: '100%',
                 }}
               >
-                <Typography
-                  variant="subtitle2"
-                  textAlign="center"
-                  fontWeight="bold"
-                  gutterBottom
+                <Box
+                  sx={{
+                    flex: 2,
+                    overflow: 'auto',
+                    border: '1px solid #999',
+                    borderRadius: 1,
+                    p: 1,
+                    cursor: 'text',
+                    userSelect: 'text',
+                    maxHeight: '100%',
+                  }}
+                  onMouseUp={() => handleTextSelection(index)}
                 >
-                  Seleções
-                </Typography>
+                  <ReactMarkdown>{doc.document_md}</ReactMarkdown>
+                </Box>
 
-                {(selections[index] || []).map((item) => (
-                  <Box
-                    key={item.key}
-                    sx={{ mb: 1, borderBottom: '1px solid #ddd', pb: 1 }}
+                <Stack
+                  spacing={1}
+                  sx={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    border: '1px solid #999',
+                    borderRadius: 1,
+                    p: 1,
+                    maxHeight: '100%',
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    textAlign="center"
+                    fontWeight="bold"
+                    gutterBottom
                   >
-                    <Typography
-                      variant="body2"
-                      fontWeight="bold"
-                      sx={{ mb: 0.5 }}
-                    >
-                      {item.key}
-                      <IconButton
-                        aria-label="remover chave"
-                        onClick={() => handleRemoveSelection(index, item.key)}
-                        size="small"
-                        sx={{ ml: 1 }}
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    </Typography>
+                    Seleções
+                  </Typography>
 
-                    {item.values.map((val, i) => (
-                      <Stack
-                        key={i}
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
+                  {(selections[index] || []).map((item) => (
+                    <Box
+                      key={item.key}
+                      sx={{ mb: 1, borderBottom: '1px solid #ddd', pb: 1 }}
+                    >
+                      <Typography
+                        variant="body2"
+                        fontWeight="bold"
                         sx={{ mb: 0.5 }}
                       >
-                        <TextField
-                          label="Valor"
-                          value={val}
-                          size="small"
-                          onChange={(e) =>
-                            handleUpdateValue(
-                              index,
-                              item.key,
-                              i,
-                              e.target.value
-                            )
-                          }
-                          sx={{ flex: 1 }}
-                        />
+                        {item.key}
                         <IconButton
-                          aria-label="remover valor"
-                          onClick={() => handleRemoveValue(index, item.key, i)}
+                          aria-label="remover chave"
+                          onClick={() => handleRemoveSelection(index, item.key)}
                           size="small"
+                          sx={{ ml: 1 }}
                         >
                           <CloseIcon fontSize="small" />
                         </IconButton>
-                      </Stack>
-                    ))}
-                  </Box>
-                ))}
+                      </Typography>
 
-                <Box textAlign="left" mt={2}>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleSendSelections(index)}
-                    disabled={
-                      selectionMutation.isLoading ||
-                      !(selections[index]?.length > 0)
-                    }
-                  >
-                    {selectionMutation.isLoading ? 'Enviando...' : 'Enviar'}
-                  </Button>
-                </Box>
-              </Stack>
+                      {item.values.map((val, i) => (
+                        <Stack
+                          key={i}
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          sx={{ mb: 0.5 }}
+                        >
+                          <TextField
+                            label="Valor"
+                            value={val}
+                            size="small"
+                            onChange={(e) =>
+                              handleUpdateValue(
+                                index,
+                                item.key,
+                                i,
+                                e.target.value
+                              )
+                            }
+                            sx={{ flex: 1 }}
+                          />
+                          <IconButton
+                            aria-label="remover valor"
+                            onClick={() =>
+                              handleRemoveValue(index, item.key, i)
+                            }
+                            size="small"
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      ))}
+                    </Box>
+                  ))}
+
+                  <Box textAlign="left" mt={2}>
+                    <Button
+                      variant="contained"
+                      onClick={() => handleSendSelections(index)}
+                      disabled={
+                        selectionMutation.isLoading ||
+                        !(selections[index]?.length > 0)
+                      }
+                    >
+                      {selectionMutation.isLoading ? 'Enviando...' : 'Enviar'}
+                    </Button>
+                  </Box>
+                </Stack>
+              </Box>
             </Box>
           ))}
         </DialogContent>
