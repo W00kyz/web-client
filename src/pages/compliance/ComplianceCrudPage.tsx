@@ -1,17 +1,7 @@
 import { useState } from 'react';
 import { Report, ReportDataSource } from '@datasources/report';
 import Section from '@components/Section';
-import {
-  Button,
-  Grid,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  CircularProgress,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+import { Button, Grid, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { useQuery } from '@hooks/useQuery';
 import {
   GridColDef,
@@ -19,10 +9,8 @@ import {
   GridPaginationModel,
   GridSortModel,
 } from '@mui/x-data-grid';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { DataGrid } from '@mui/x-data-grid';
 import { ptBR as ptBRGrid } from '@mui/x-data-grid/locales';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 import UploadReportModal from './UploadReportModal';
 
@@ -33,8 +21,6 @@ interface ComplianceCrudPageProps {
 export const ComplianceCrudPage = ({
   reportDataSource,
 }: ComplianceCrudPageProps) => {
-  const [empresa, setEmpresa] = useState<string>('');
-  const [data, setData] = useState<Date | null>(new Date());
   const [openModal, setOpenModal] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
@@ -93,33 +79,6 @@ export const ComplianceCrudPage = ({
 
   return (
     <>
-      <Grid container spacing={2} alignItems="center" mb={2}>
-        <Grid size={4}>
-          <FormControl fullWidth>
-            <InputLabel id="empresa-label">Empresa</InputLabel>
-            <Select
-              labelId="empresa-label"
-              label="Empresa"
-              value={empresa}
-              onChange={(e) => setEmpresa(e.target.value)}
-            >
-              <MenuItem value="empresa1">Empresa 1</MenuItem>
-              <MenuItem value="empresa2">Empresa 2</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid size={4}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              views={['year', 'month']}
-              label="Mês e Ano"
-              value={data}
-              onChange={(newDate) => setData(newDate)}
-            />
-          </LocalizationProvider>
-        </Grid>
-      </Grid>
       <Section title="Funcionários">
         <Grid container justifyContent="flex-end" alignItems="center" mb={2}>
           <Grid>
