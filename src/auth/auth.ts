@@ -1,78 +1,113 @@
-import type { Session } from "@toolpad/core/AppProvider";
+import {
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  signInWithPopup,
+  setPersistence,
+  browserSessionPersistence,
+  signInWithEmailAndPassword,
+  signOut,
+  User,
+} from 'firebase/auth';
+import { firebaseAuth } from './firebaseConfig';
 
-export async function signInWithCredentials({
-  email,
-  password,
-}: {
-  email: string;
-  password: string;
-}): Promise<{ success: boolean; user?: Session["user"]; error?: string }> {
+const googleProvider = new GoogleAuthProvider();
+const githubProvider = new GithubAuthProvider();
+
+interface AuthResult {
+  success: boolean;
+  user: User | null;
+  token?: string;
+  error: string | null;
+}
+
+// Sign in with Google functionality
+export const signInWithGoogle = async (): Promise<AuthResult> => {
   try {
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      return { success: false, error: "Credenciais incorretas" };
-    }
-
-    const token = response.headers
-      .get("Authorization")
-      ?.replace(/^Bearer\s+/i, "");
-    const data = await response.json();
-
-    if (!token && !data.token) {
-      return { success: false, error: "Token JWT não encontrado" };
-    }
-
-    const finalToken = token ?? data.token;
-
-    sessionStorage.setItem("token", finalToken);
-    sessionStorage.setItem("user", JSON.stringify(data.user));
-
+    await setPersistence(firebaseAuth, browserSessionPersistence);
+    const result = await signInWithPopup(firebaseAuth, googleProvider);
+    const token = await result.user.getIdToken();
     return {
       success: true,
-      user: {
-        id: data.user.id ?? null,
-        name: data.user.name ?? null,
-        email: data.user.email ?? null,
-        image: data.user.image ?? null,
-      },
+      user: result.user,
+      token,
+      error: null,
     };
-  } catch {
-    return { success: false, error: "Erro na requisição" };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      user: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+// Sign in with GitHub functionality
+export const signInWithGithub = async (): Promise<AuthResult> => {
+  try {
+    await setPersistence(firebaseAuth, browserSessionPersistence);
+    const result = await signInWithPopup(firebaseAuth, githubProvider);
+    return {
+      success: true,
+      user: result.user,
+      error: null,
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      user: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+// Sign in with email and password
+export async function signInWithCredentials(
+  email: string,
+  password: string
+): Promise<AuthResult> {
+  try {
+    await setPersistence(firebaseAuth, browserSessionPersistence);
+    const userCredential = await signInWithEmailAndPassword(
+      firebaseAuth,
+      email,
+      password
+    );
+    const token = await userCredential.user.getIdToken();
+    return {
+      success: true,
+      user: userCredential.user,
+      token,
+      error: null,
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      user: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to sign in with email/password',
+    };
   }
 }
 
-export async function mockSignInWithCredentials({
-  email,
-  password,
-}: {
-  email: string;
-  password: string;
-}): Promise<{ success: boolean; user?: Session["user"]; error?: string }> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      if (password === "password") {
-        const user = {
-          id: "123",
-          name: "Mock User",
-          email,
-          image: "https://i.pravatar.cc/150?u=mockuser",
-        };
-        sessionStorage.setItem("token", "mock-token-123");
-        sessionStorage.setItem("user", JSON.stringify(user));
-        resolve({ success: true, user });
-      } else {
-        resolve({ success: false, error: "Credenciais incorretas" });
-      }
-    }, 1000);
-  });
-}
+// Sign out functionality
+export const firebaseSignOut = async (): Promise<{
+  success: boolean;
+  error?: string;
+}> => {
+  try {
+    await signOut(firebaseAuth);
+    return { success: true };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
 
-export function signOut() {
-  sessionStorage.removeItem("token");
-  sessionStorage.removeItem("user");
-}
+// Auth state observer
+export const onAuthStateChanged = (callback: (user: User | null) => void) => {
+  return firebaseAuth.onAuthStateChanged(callback);
+};

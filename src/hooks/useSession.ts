@@ -1,14 +1,24 @@
-import * as React from "react";
-import type { Session } from "@toolpad/core/AppProvider";
+import * as React from 'react';
+
+export interface Session {
+  user: {
+    name?: string;
+    email?: string;
+    image?: string;
+    token?: string;
+  };
+}
 
 interface SessionContextType {
   session: Session | null;
-  setSession: (session: Session | null) => void;
+  setSession: (session: Session) => void;
+  loading: boolean;
 }
 
 const SessionContext = React.createContext<SessionContextType>({
   session: null,
   setSession: () => {},
+  loading: true,
 });
 
 export default SessionContext;
