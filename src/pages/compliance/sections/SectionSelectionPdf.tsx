@@ -19,6 +19,7 @@ import { useSession } from '@hooks/useSession';
 interface Selection {
   key: string;
   values: string[];
+  context?: string;
 }
 
 interface DocumentDTO {
@@ -52,7 +53,10 @@ const uploadDataSource = (token: string) => ({
 });
 
 const selectionDataSource = (token: string) => ({
-  createOne: async (data: { documentId: number; selections: Selection[] }) => {
+  createOne: async (data: {
+    documentId: number;
+    selections: { key: string; values: string[]; context?: string }[];
+  }) => {
     const response = await fetch('http://localhost:8000/document/upload', {
       method: 'POST',
       headers: {
@@ -71,24 +75,30 @@ const selectionDataSource = (token: string) => ({
 });
 
 export const PdfSelectionSection = () => {
-  const [files, setFiles] = useState<File[]>([]);
+  const [, setFiles] = useState<File[]>([]);
   const [documents, setDocuments] = useState<DocumentDTO[]>([]);
   const [selections, setSelections] = useState<Record<number, Selection[]>>({});
 
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [inputKey, setInputKey] = useState('');
   const [inputValue, setInputValue] = useState('');
+  const [currentContext, setCurrentContext] = useState(''); // ✅ Adicionado
 
-  const [currentText, setCurrentText] = useState('');
+  const [, setCurrentText] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
-
   const [modalOpen, setModalOpen] = useState(false);
 
   const { session } = useSession();
   const token = session?.user?.token || '';
 
-  const pendingSelection = useRef<{ index: number; text: string } | null>(null);
-  console.log(session)
+  const wordOffset = 10;
+
+  const pendingSelection = useRef<{
+    index: number;
+    text: string;
+    context?: string;
+  } | null>(null);
+
   const uploadMutation = useMutation<File, DocumentDTO>(
     uploadDataSource(token).createOne,
     {
@@ -117,17 +127,49 @@ export const PdfSelectionSection = () => {
   };
 
   const handleTextSelection = (index: number) => {
-    const selection = window.getSelection()?.toString() ?? '';
-    if (!selection) return;
-    pendingSelection.current = { index, text: selection };
+    const selection = window.getSelection();
+    const selectedText = selection?.toString() ?? '';
+    if (!selectedText) return;
+
+    const fullText = documents[index]?.document_md ?? '';
+    const normalizedFullText = fullText.replace(/\s+/g, ' ');
+    const normalizedSelected = selectedText.trim();
+
+    const matchIndex = normalizedFullText.indexOf(normalizedSelected);
+
+    let context = '';
+    if (matchIndex >= 0) {
+      const words = normalizedFullText.split(' ');
+      let selectedWordIndex = -1;
+      let runningLength = 0;
+
+      for (let i = 0; i < words.length; i++) {
+        runningLength += words[i].length + 1;
+        if (runningLength >= matchIndex + normalizedSelected.length / 2) {
+          selectedWordIndex = i;
+          break;
+        }
+      }
+
+      const start = Math.max(0, selectedWordIndex - wordOffset);
+      const end = Math.min(words.length, selectedWordIndex + wordOffset + 1);
+      context = words.slice(start, end).join(' ');
+    }
+
+    pendingSelection.current = {
+      index,
+      text: selectedText,
+      context,
+    };
   };
 
   useEffect(() => {
     const handleMouseUp = () => {
       if (pendingSelection.current && !openDialog) {
-        const { index, text } = pendingSelection.current;
+        const { index, text, context } = pendingSelection.current;
         setCurrentIndex(index);
         setCurrentText(text);
+        setCurrentContext(context || ''); // ✅ Correção aplicada
         setInputKey('');
         setInputValue(text);
         setOpenDialog(true);
@@ -140,39 +182,49 @@ export const PdfSelectionSection = () => {
 
   const handleConfirm = () => {
     if (currentIndex !== null && inputKey.trim()) {
-      handleAddSelection(currentIndex, inputKey.trim(), inputValue);
+      handleAddSelection(
+        currentIndex,
+        inputKey.trim(),
+        inputValue,
+        currentContext // ✅ Correção aplicada
+      );
     }
     setOpenDialog(false);
     setCurrentText('');
     setCurrentIndex(null);
   };
 
-  // Alteração principal: cada chave pode ter múltiplos valores
-  const handleAddSelection = (docIndex: number, key: string, value: string) => {
+  const handleAddSelection = (
+    docIndex: number,
+    key: string,
+    value: string,
+    context: string
+  ) => {
     setSelections((prev) => {
       const current = prev[docIndex] || [];
       const existingIndex = current.findIndex((item) => item.key === key);
       if (existingIndex >= 0) {
-        // Adiciona novo valor na lista da chave existente (se não repetir)
         const existingValues = current[existingIndex].values;
         if (!existingValues.includes(value)) {
           const updatedValues = [...existingValues, value];
           const updated = [...current];
-          updated[existingIndex] = { key, values: updatedValues };
+          updated[existingIndex] = {
+            key,
+            values: updatedValues,
+            context,
+          };
           return { ...prev, [docIndex]: updated };
         }
         return prev;
       } else {
-        // Cria nova chave com o valor em lista
         return {
           ...prev,
-          [docIndex]: [...current, { key, values: [value] }],
+          [docIndex]: [...current, { key, values: [value], context }],
         };
       }
     });
   };
 
-  // Atualiza um valor específico na lista de valores da chave
   const handleUpdateValue = (
     docIndex: number,
     key: string,
@@ -185,7 +237,7 @@ export const PdfSelectionSection = () => {
         if (item.key === key) {
           const newValues = [...item.values];
           newValues[valueIndex] = newValue;
-          return { key, values: newValues };
+          return { key, values: newValues, context: item.context };
         }
         return item;
       });
@@ -193,7 +245,6 @@ export const PdfSelectionSection = () => {
     });
   };
 
-  // Remove um valor específico da lista de valores da chave
   const handleRemoveValue = (
     docIndex: number,
     key: string,
@@ -206,17 +257,15 @@ export const PdfSelectionSection = () => {
           if (item.key === key) {
             const newValues = [...item.values];
             newValues.splice(valueIndex, 1);
-            return { key, values: newValues };
+            return { key, values: newValues, context: item.context };
           }
           return item;
         })
-        // Remove a chave se não tiver mais valores
         .filter((item) => item.values.length > 0);
       return { ...prev, [docIndex]: updated };
     });
   };
 
-  // Remove toda uma chave
   const handleRemoveSelection = (docIndex: number, key: string) => {
     setSelections((prev) => {
       const current = prev[docIndex] || [];
@@ -229,7 +278,11 @@ export const PdfSelectionSection = () => {
     const documentId = documents[docIndex]?.id ?? 0;
     const dataToSend = {
       documentId,
-      selections: selections[docIndex] || [],
+      selections: (selections[docIndex] || []).map((sel) => ({
+        key: sel.key,
+        values: sel.values,
+        context: sel.context || '',
+      })),
     };
     selectionMutation.mutate(dataToSend);
   };
