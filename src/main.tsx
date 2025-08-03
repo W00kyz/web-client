@@ -4,7 +4,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import App from './App';
 import Layout from './layouts/dashboard';
 import SignInPage from './pages/signin';
-import { ConformityPage } from '@pages/compliance/CompliancePage';
+import { TemplatePage } from '@pages/template/TemplatePage';
+import DashboardPage from './pages';
 
 const router = createBrowserRouter([
   {
@@ -16,7 +17,11 @@ const router = createBrowserRouter([
         children: [
           {
             path: '/',
-            Component: ConformityPage,
+            Component: DashboardPage,
+          },
+          {
+            path: 'templates/:templateId?/*',
+            Component: TemplatePage,
           },
         ],
       },

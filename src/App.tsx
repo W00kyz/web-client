@@ -5,6 +5,7 @@ import type { Authentication, Navigation } from '@toolpad/core/AppProvider';
 import SessionContext, { Session } from './hooks/useSession';
 import ptBr from './locales/ptbr';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import { createTheme } from '@mui/material';
 import type { User } from 'firebase/auth';
 import {
@@ -17,7 +18,14 @@ import { ptBR as gridPtBr } from '@mui/x-data-grid/locales';
 
 const NAVIGATION: Navigation = [
   { kind: 'header', title: 'Main items' },
-  { title: 'Conformidade', icon: <AssignmentIcon /> },
+  { title: 'Dashboard', icon: <DashboardIcon /> },
+
+  {
+    title: 'Templates',
+    segment: 'templates',
+    icon: <AssignmentIcon />,
+    pattern: 'templates{/:templateId}*',
+  },
 ];
 const BRANDING = { title: 'VeraAI', logo: '' };
 
