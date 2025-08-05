@@ -15,7 +15,7 @@ export default function TimelineStep({ step, index, isActive, isLast, isPast, on
   const isEven = index % 2 === 0;
 
   return (
-    <Box id={`step-${index}`} sx={{ position: 'relative', scrollMarginTop: 120 }}>
+    <Box id={`step-${index}`} sx={{ position: 'relative', maxHeight: 100, scrollMarginTop: 120 }}>
       {/* Conteúdo */}
       <Stack
         direction="row"

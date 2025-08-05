@@ -2,14 +2,19 @@ import { Box, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { steps } from '../constants/steps';
 import TimelineStep from '../components/TimelineStep';
+import Lottie from 'lottie-react';
+import aiAnimation from '../assets/json/vera-animation.json';
+import { Link } from 'react-router-dom';
 
 export default function IndexPage() {
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const timelineRef = useRef<HTMLDivElement | null>(null);
+  const lastStepRef = useRef<HTMLDivElement | null>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [lineHeight, setLineHeight] = useState(0);
   const visitedSteps = useRef<Set<number>>(new Set([0]));
-  const isUserScrolling = useRef(false); // Evita conflito entre scroll manual e observer
+  const isUserScrolling = useRef(false);
 
-  // Função de scroll ao clicar no número
   const scrollToStep = (index: number) => {
     const el = stepRefs.current[index];
     if (el) {
@@ -17,8 +22,6 @@ export default function IndexPage() {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setActiveStep(index);
       visitedSteps.current.add(index);
-
-      // Evita observer sobrescrever durante scroll suave
       setTimeout(() => {
         isUserScrolling.current = false;
       }, 800);
@@ -29,111 +32,171 @@ export default function IndexPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (isUserScrolling.current) return;
-
-        const mostVisibleEntry = entries
-          .filter((entry) => entry.isIntersecting)
+        const mostVisible = entries
+          .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
 
-        if (mostVisibleEntry) {
-          const index = Number(mostVisibleEntry.target.getAttribute('data-step'));
-
+        if (mostVisible) {
+          const index = Number(mostVisible.target.getAttribute('data-step'));
           const canAdvance = index > activeStep && visitedSteps.current.has(index - 1);
           const canGoBack = index < activeStep && visitedSteps.current.has(index + 1);
-          const isFirstStep = index === 0;
+          const isFirst = index === 0;
 
-          if (canAdvance || canGoBack || isFirstStep) {
+          if (canAdvance || canGoBack || isFirst) {
             setActiveStep(index);
             visitedSteps.current.add(index);
           }
         }
       },
-      {
-        threshold: 0.3,
-        rootMargin: '0px 0px -40% 0px',
-      }
+      { threshold: 0.3, rootMargin: '0px 0px -40% 0px' }
     );
 
     stepRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
   }, [activeStep]);
 
+  // 🔧 Calcula altura exata da linha azul
+  useEffect(() => {
+    const updateLineHeight = () => {
+      if (!timelineRef.current || !lastStepRef.current) return;
+
+      const timelineTop = timelineRef.current.getBoundingClientRect().top + window.scrollY;
+      const lastStepTop = lastStepRef.current.getBoundingClientRect().top + window.scrollY;
+
+      const height = lastStepTop - timelineTop + 60; // 60 = ajuste para incluir a bolinha
+      setLineHeight(height);
+    };
+
+    updateLineHeight();
+    window.addEventListener('resize', updateLineHeight);
+    return () => window.removeEventListener('resize', updateLineHeight);
+  }, []);
+
   return (
     <Box sx={{ px: { xs: 2, md: 6 }, pt: 6, pb: 20, position: 'relative' }}>
       {/* Título */}
-      <Typography
-        variant="h4"
-        color="primary.main"
-        textAlign="center"
-        fontWeight="bold"
-        gutterBottom
-      >
-        Como funciona o Vera AI?
+      <Typography variant="h4" color="primary.main" textAlign="center" fontWeight="bold" gutterBottom>
+        Como utilizar o Vera AI?
       </Typography>
 
       {/* Subtítulo */}
-      <Typography
-        variant="subtitle1"
-        color="text.secondary"
-        textAlign="center"
-        sx={{ mb: 6 }}
-      >
-        Uma jornada visual para entender o fluxo de trabalho do sistema.
+      <Typography variant="subtitle1" color="text.secondary" textAlign="center" sx={{ mb: 6 }}>
+        Entenda o fluxo de trabalho do sistema.
       </Typography>
 
-      {/* Linha vertical cinza contínua */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: '50%',
-          top: 200,
-          bottom: 100,
-          width: 2,
-          bgcolor: 'grey.300',
-          transform: 'translateX(-50%)',
-          zIndex: 0,
-        }}
-      />
-
-      {/* Linha azul dinâmica conforme progresso */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: '50%',
-          top: 200,
-          height: `${(activeStep + 1) * 160}px`, // ajuste conforme altura dos blocos
-          width: 2,
-          bgcolor: 'primary.main',
-          transform: 'translateX(-50%)',
-          zIndex: 1,
-          transition: 'height 0.3s ease-in-out',
-        }}
-      />
-
-      {/* Passos da timeline */}
-      {steps.map((step, index) => (
+      {/* Container da timeline */}
+      <Box ref={timelineRef} sx={{ position: 'relative' }}>
+        {/* Linha cinza contínua */}
         <Box
-          key={step.id}
-          ref={(el: HTMLDivElement | null) => {
-            stepRefs.current[index] = el;
-          }}
-          data-step={index}
           sx={{
-            scrollMarginTop: '120px',
-            mb: 10,
-            position: 'relative',
-            zIndex: 2,
+            position: 'absolute',
+            left: '50%',
+            top: 0,
+            width: 2,
+            bottom: 0,
+            bgcolor: 'grey.300',
+            transform: 'translateX(-50%)',
+            zIndex: 0,
+          }}
+        />
+
+        {/* Linha azul dinâmica */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: 0,
+            width: 2,
+            bottom: 0,
+            bgcolor: 'grey.300',
+            transform: 'translateX(-50%)',
+            zIndex: 0,
+          }}
+        />
+
+        {/* Passos */}
+        {steps.map((step, index) => (
+          <Box
+            key={step.id}
+            ref={(el: HTMLDivElement | null) => {
+              stepRefs.current[index] = el;
+              if (index === steps.length - 1) lastStepRef.current = el;
+            }}
+            data-step={index}
+            sx={{
+              scrollMarginTop: '120px',
+              mb: 10,
+              position: 'relative',
+              zIndex: 2,
+            }}
+          >
+            <TimelineStep
+              step={step}
+              index={index}
+              isActive={index === activeStep}
+              isPast={index < activeStep}
+              isLast={index === steps.length - 1}
+              onClick={scrollToStep}
+            />
+          </Box>
+        ))}
+      </Box>
+
+      {/* Seção do Vera AI */}
+      <Box
+        sx={{
+          maxWidth: 900,
+          mx: 'auto',
+          textAlign: 'center',
+          mt: 10,
+          px: { xs: 2, md: 4 },
+        }}
+      >
+        <Typography variant="h4" color="primary.main" fontWeight="bold" gutterBottom>
+          O que é o Vera AI?
+        </Typography>
+
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+          O Vera AI é um sistema inteligente desenvolvido para simplificar e automatizar a fiscalização
+          de contratos com empresas terceirizadas.
+        </Typography>
+
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 0 }}>
+          Ele permite que fiscais enviem documentos, validem automaticamente informações como FGTS,
+          salários e INSS, revisem pendências e gerem relatórios com poucos cliques.
+        </Typography>
+
+        {/* Animação */}
+        <Lottie
+          animationData={aiAnimation}
+          loop
+          style={{
+            maxWidth: 450,
+            margin: '0 auto',
+            marginTop: -10,
+            display: 'block',
+            lineHeight: 0,         // <- ajuda a remover espaçamento invisível
+            paddingTop: 0,         // <- garante que nada vem de padding
+          }}
+        />
+      </Box>
+
+      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+        <Link
+          to="/templates"
+          style={{
+            backgroundColor: '#1976d2',
+            color: 'white',
+            textDecoration: 'none',
+            padding: '12px 24px',
+            fontSize: '1rem',
+            borderRadius: '8px',
+            display: 'inline-block',
           }}
         >
-          <TimelineStep
-            step={step}
-            index={index}
-            isActive={index === activeStep}
-            isPast={index < activeStep}
-            isLast={index === steps.length - 1}
-            onClick={scrollToStep} // <- adiciona clique
-          />
-        </Box>
-      ))}
+          Comece já!
+        </Link>
+      </Box>
     </Box>
   );
 }
