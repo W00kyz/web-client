@@ -7,7 +7,7 @@ interface Props {
   isActive: boolean;
   isLast: boolean;
   isPast: boolean;
-  onClick?: (index: number) => void; // <- nova prop para clique
+  onClick?: (index: number) => void;
 }
 
 export default function TimelineStep({ step, index, isActive, isLast, isPast, onClick }: Props) {

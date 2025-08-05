@@ -55,7 +55,6 @@ export default function IndexPage() {
     return () => observer.disconnect();
   }, [activeStep]);
 
-  // 🔧 Calcula altura exata da linha azul
   useEffect(() => {
     const updateLineHeight = () => {
       if (!timelineRef.current || !lastStepRef.current) return;
@@ -63,7 +62,7 @@ export default function IndexPage() {
       const timelineTop = timelineRef.current.getBoundingClientRect().top + window.scrollY;
       const lastStepTop = lastStepRef.current.getBoundingClientRect().top + window.scrollY;
 
-      const height = lastStepTop - timelineTop + 60; // 60 = ajuste para incluir a bolinha
+      const height = lastStepTop - timelineTop + 60;
       setLineHeight(height);
     };
 
@@ -81,7 +80,7 @@ export default function IndexPage() {
 
       {/* Subtítulo */}
       <Typography variant="subtitle1" color="text.secondary" textAlign="center" sx={{ mb: 6 }}>
-        Entenda o fluxo de trabalho do sistema.
+        Entenda o fluxo de trabalho do sistema!
       </Typography>
 
       {/* Container da timeline */}
@@ -158,12 +157,13 @@ export default function IndexPage() {
 
         <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
           O Vera AI é um sistema inteligente desenvolvido para simplificar e automatizar a fiscalização
-          de contratos com empresas terceirizadas.
+          de contratos administrativos.
         </Typography>
 
         <Typography variant="body1" color="text.secondary" sx={{ mb: 0 }}>
-          Ele permite que fiscais enviem documentos, validem automaticamente informações como FGTS,
-          salários e INSS, revisem pendências e gerem relatórios com poucos cliques.
+          A fiscalização de contratos exige uma análise detalhada de diversos documentos e informações, 
+          tornando o processo longo e suscetível a erros humanos. Este sistema veio para permitir que fiscais e 
+          gestores possam conduzir suas análises de forma mais eficiente.
         </Typography>
 
         {/* Animação */}
@@ -175,8 +175,8 @@ export default function IndexPage() {
             margin: '0 auto',
             marginTop: -10,
             display: 'block',
-            lineHeight: 0,         // <- ajuda a remover espaçamento invisível
-            paddingTop: 0,         // <- garante que nada vem de padding
+            lineHeight: 0,         
+            paddingTop: 0, 
           }}
         />
       </Box>
