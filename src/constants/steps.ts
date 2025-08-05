@@ -26,8 +26,8 @@ export const steps: Step[] = [
   },
   {
     id: 3,
-    title: 'Confirmação de seleção',
-    description: 'Analise se a seção selecionada é a desejada e confirme para a geração automática do relatório.',
+    title: 'Confirmação de Template',
+    description: 'Analise se a seção selecionada é o template desejado e confirme para a geração automática do relatório.',
     icon: PlaylistAddCheckOutlined,
   },
   {
