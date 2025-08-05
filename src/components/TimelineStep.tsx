@@ -49,7 +49,7 @@ export default function TimelineStep({ step, index, isActive, isLast, isPast, on
               width: 40,
               height: 40,
               borderRadius: '50%',
-              bgcolor: isActive ? 'primary.main' : 'grey.300',
+              bgcolor: 'primary.main',
               color: 'white',
               display: 'flex',
               alignItems: 'center',
