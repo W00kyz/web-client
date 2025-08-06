@@ -19,7 +19,6 @@ import { ptBR as gridPtBr } from '@mui/x-data-grid/locales';
 const NAVIGATION: Navigation = [
   { kind: 'header', title: 'Main items' },
   { title: 'Home', icon: <DashboardIcon /> },
-
   {
     title: 'Templates',
     segment: 'templates',

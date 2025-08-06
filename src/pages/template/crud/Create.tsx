@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  useMemo,
-} from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -22,11 +16,18 @@ import {
   Tooltip,
 } from '@mui/material';
 import { PageContainer } from '@toolpad/core';
-import ReactMarkdown from 'react-markdown';
 import ClearIcon from '@mui/icons-material/Clear';
 import LabelIcon from '@mui/icons-material/Label';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import FileInput from '@components/FileInput';
+import { useMutation } from '@hooks/useMutation';
+import { fileUploadDataSource } from '@datasources/upload';
+import {
+  templateDataSources,
+  templateRuleDataSource,
+} from '@datasources/template';
+import { MarkdownHighlighter } from '@components/MarkdownHighlighter';
+import { useSession } from '@hooks/useSession';
 
 interface Rule {
   key: string;
@@ -40,10 +41,12 @@ interface CreateTemplateProps {
 }
 
 export const CreateTemplate = ({ onCreate }: CreateTemplateProps) => {
+  const { session } = useSession();
   const [templateName, setTemplateName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [rules, setRules] = useState<Rule[]>([]);
+  const [regexList, setRegexList] = useState<string[]>([]);
   const [activeRuleIndex, setActiveRuleIndex] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKey, setModalKey] = useState('');
@@ -53,30 +56,17 @@ export const CreateTemplate = ({ onCreate }: CreateTemplateProps) => {
   const [modalIsSectionDisabled, setModalIsSectionDisabled] = useState(false);
   const activeKeyRef = useRef<HTMLInputElement | null>(null);
 
+  const fileUpload = useMutation(fileUploadDataSource.uploadFile, {
+    onSuccess: (result) => {
+      setMarkdownContent(result.document_md || '');
+    },
+  });
+
   useEffect(() => {
-    if (!selectedFile) return;
-    setMarkdownContent('');
-    const timeout = setTimeout(() => {
-      const mockMarkdown = `
-# Contrato Simulado
-
-Este contrato é um exemplo fornecido pelo backend simulado.
-
-## Cláusula 1 - Objeto
-
-Descreve o objeto da contratação.
-
-## Cláusula 2 - Pagamento
-
-Descreve os valores e datas de pagamento.
-
-## Cláusula 3 - Vigência
-
-Contrato válido por 12 meses.
-`;
-      setMarkdownContent(mockMarkdown);
-    }, 1000);
-    return () => clearTimeout(timeout);
+    if (selectedFile) {
+      setMarkdownContent('');
+      fileUpload.mutate({ file: selectedFile, token: session?.user.token });
+    }
   }, [selectedFile]);
 
   useEffect(() => {
@@ -115,76 +105,51 @@ Contrato válido por 12 meses.
 
   const handleModalClose = useCallback(() => setModalOpen(false), []);
 
-  const handleModalConfirm = useCallback(() => {
-    const trimmedKey = modalKey.trim();
-    const trimmedValue = modalValue.trim();
-
-    if (!trimmedKey) {
-      alert('Digite a chave!');
-      return;
-    }
-
-    const existingRuleIndex = rules.findIndex(
-      (r) => r.key === trimmedKey && !r.finalized
-    );
-
-    if (existingRuleIndex !== -1) {
-      const existingRule = rules[existingRuleIndex];
-
-      if (existingRule.isSection !== modalIsSection) {
-        alert(
-          `Esta chave já está sendo usada como uma regra do tipo "${
-            existingRule.isSection ? 'Seção' : 'Comum'
-          }".`
-        );
-        return;
-      }
-
-      setRules((prev) => {
-        const copy = [...prev];
-        const values = copy[existingRuleIndex].values;
-
-        const emptyIndex = values.findIndex((v) => v === '');
-        if (emptyIndex !== -1) {
-          values[emptyIndex] = trimmedValue;
-        } else if (!values.includes(trimmedValue)) {
-          values.push(trimmedValue);
-        }
-
-        return copy;
-      });
-
-      setActiveRuleIndex(existingRuleIndex);
-      setModalOpen(false);
-      return;
-    }
-
-    if (activeRuleIndex !== null && !rules[activeRuleIndex]?.finalized) {
-      alert('Finalize a regra atual antes de adicionar outra.');
-      return;
-    }
-
-    const newRule: Rule = {
-      key: trimmedKey,
-      values: [trimmedValue],
-      isSection: modalIsSection,
-      finalized: false,
-    };
-
-    setRules((prev) => [...prev, newRule]);
-    setActiveRuleIndex(rules.length);
-    setModalOpen(false);
-  }, [modalKey, modalValue, modalIsSection, rules, activeRuleIndex]);
+  // Usando a mutação que já espera o formato correto e retorno completo
+  const ruleMutation = useMutation(templateRuleDataSource.createOne);
 
   const finalizeRule = useCallback(() => {
     if (activeRuleIndex === null) return;
-    setRules((prev) => {
-      const copy = [...prev];
-      copy[activeRuleIndex].finalized = true;
-      return copy;
-    });
-    setActiveRuleIndex(null);
-  }, [activeRuleIndex]);
+    if (!selectedFile) return;
+
+    const rule = rules[activeRuleIndex];
+
+    ruleMutation.mutate(
+      {
+        data: {
+          documentId: 1,
+          selections: [
+            {
+              key: rule.key,
+              values: rule.values,
+            },
+          ],
+          isSection: rule.isSection,
+        },
+        token: session?.user.token,
+      },
+      {
+        onSuccess: (response) => {
+          console.log(response?.pattern);
+
+          if (response?.pattern) {
+            setRegexList((prev) => [...prev, response.pattern]);
+          }
+
+          setRules((prev) => {
+            const copy = [...prev];
+            copy[activeRuleIndex].finalized = true;
+            return copy;
+          });
+
+          setActiveRuleIndex(null);
+        },
+        onError: (error) => {
+          console.error('Erro ao gerar regex:', error);
+        },
+      }
+    );
+  }, [activeRuleIndex, rules, ruleMutation, selectedFile]);
 
   const updateRule = useCallback(
     (
@@ -251,6 +216,81 @@ Contrato válido por 12 meses.
     setRules((prev) => [...prev, newRule]);
     setActiveRuleIndex(rules.length);
   }, [activeRuleIndex, rules]);
+
+  const handleModalConfirm = useCallback(() => {
+    const trimmedKey = modalKey.trim();
+    const trimmedValue = modalValue.trim();
+
+    if (!trimmedKey) {
+      alert('Digite a chave!');
+      return;
+    }
+
+    const existingRuleIndex = rules.findIndex(
+      (r) => r.key === trimmedKey && !r.finalized
+    );
+
+    if (existingRuleIndex !== -1) {
+      const existingRule = rules[existingRuleIndex];
+
+      if (existingRule.isSection !== modalIsSection) {
+        alert(
+          `Esta chave já está sendo usada como uma regra do tipo "${
+            existingRule.isSection ? 'Seção' : 'Comum'
+          }".`
+        );
+        return;
+      }
+
+      setRules((prev) => {
+        const copy = [...prev];
+        const values = copy[existingRuleIndex].values;
+
+        const emptyIndex = values.findIndex((v) => v === '');
+        if (emptyIndex !== -1) {
+          values[emptyIndex] = trimmedValue;
+        } else if (!values.includes(trimmedValue)) {
+          values.push(trimmedValue);
+        }
+
+        return copy;
+      });
+
+      setActiveRuleIndex(existingRuleIndex);
+      setModalOpen(false);
+      return;
+    }
+
+    if (activeRuleIndex !== null && !rules[activeRuleIndex]?.finalized) {
+      alert('Finalize a regra atual antes de adicionar outra.');
+      return;
+    }
+
+    const newRule: Rule = {
+      key: trimmedKey,
+      values: [trimmedValue],
+      isSection: modalIsSection,
+      finalized: false,
+    };
+
+    setRules((prev) => [...prev, newRule]);
+    setActiveRuleIndex(rules.length);
+    setModalOpen(false);
+  }, [modalKey, modalValue, modalIsSection, rules, activeRuleIndex]);
+
+  const saveTemplateMutation = useMutation(templateDataSources.createOne);
+
+  const handleSaveTemplate = useCallback(() => {
+    saveTemplateMutation.mutate(
+      {
+        name: templateName,
+        rules: regexList,
+      },
+      {
+        onSuccess: onCreate,
+      }
+    );
+  }, [templateName, regexList, onCreate, saveTemplateMutation]);
 
   const renderedRules = useMemo(
     () =>
@@ -395,7 +435,10 @@ Contrato válido por 12 meses.
                   }}
                   onMouseUp={handleTextSelection}
                 >
-                  <ReactMarkdown>{markdownContent}</ReactMarkdown>
+                  <MarkdownHighlighter
+                    markdown={markdownContent}
+                    regexes={regexList}
+                  />
                 </Box>
 
                 <Paper
@@ -450,7 +493,7 @@ Contrato válido por 12 meses.
                   </Box>
 
                   <Box textAlign="right" mt={2}>
-                    <Button variant="contained" onClick={onCreate}>
+                    <Button variant="contained" onClick={handleSaveTemplate}>
                       Salvar Template
                     </Button>
                   </Box>

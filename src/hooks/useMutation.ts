@@ -17,7 +17,8 @@ export function useMutation<TArgs, TData, TError = Error>(
   async function mutate(
     args: TArgs,
     callbacks?: UseMutationOptions<TData, TError>
-  ) {
+  ): Promise<TData | undefined> {
+    // <-- retorna Promise com resultado
     setIsLoading(true);
     setIsSuccess(false);
     setError(null);
@@ -28,11 +29,13 @@ export function useMutation<TArgs, TData, TError = Error>(
       setIsSuccess(true);
       options?.onSuccess?.(result);
       callbacks?.onSuccess?.(result);
+      return result; // <-- retorna resultado aqui
     } catch (err: unknown) {
       const error = err as TError;
       setError(error);
       options?.onError?.(error);
       callbacks?.onError?.(error);
+      return undefined; // em erro, retorna undefined
     } finally {
       setIsLoading(false);
     }
