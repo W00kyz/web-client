@@ -5,6 +5,7 @@ import TimelineStep from '../components/TimelineStep';
 import Lottie from 'lottie-react';
 import aiAnimation from '../assets/json/vera-animation.json';
 import { Link } from 'react-router-dom';
+import { LabelPanel } from '@components/LabelPanel';
 
 export default function IndexPage() {
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -38,8 +39,10 @@ export default function IndexPage() {
 
         if (mostVisible) {
           const index = Number(mostVisible.target.getAttribute('data-step'));
-          const canAdvance = index > activeStep && visitedSteps.current.has(index - 1);
-          const canGoBack = index < activeStep && visitedSteps.current.has(index + 1);
+          const canAdvance =
+            index > activeStep && visitedSteps.current.has(index - 1);
+          const canGoBack =
+            index < activeStep && visitedSteps.current.has(index + 1);
           const isFirst = index === 0;
 
           if (canAdvance || canGoBack || isFirst) {
@@ -59,8 +62,10 @@ export default function IndexPage() {
     const updateLineHeight = () => {
       if (!timelineRef.current || !lastStepRef.current) return;
 
-      const timelineTop = timelineRef.current.getBoundingClientRect().top + window.scrollY;
-      const lastStepTop = lastStepRef.current.getBoundingClientRect().top + window.scrollY;
+      const timelineTop =
+        timelineRef.current.getBoundingClientRect().top + window.scrollY;
+      const lastStepTop =
+        lastStepRef.current.getBoundingClientRect().top + window.scrollY;
 
       const height = lastStepTop - timelineTop + 60;
       setLineHeight(height);
@@ -74,12 +79,24 @@ export default function IndexPage() {
   return (
     <Box sx={{ px: { xs: 2, md: 6 }, pt: 6, pb: 20, position: 'relative' }}>
       {/* Título */}
-      <Typography variant="h4" color="primary.main" textAlign="center" fontWeight="bold" gutterBottom>
+      <Typography
+        variant="h4"
+        color="primary.main"
+        textAlign="center"
+        fontWeight="bold"
+        gutterBottom
+      >
         Como utilizar o Vera AI?
       </Typography>
 
+      <LabelPanel templateTitle="Tester" labels={{ teste: ['ola'] }} />
       {/* Subtítulo */}
-      <Typography variant="subtitle1" color="text.secondary" textAlign="center" sx={{ mb: 6 }}>
+      <Typography
+        variant="subtitle1"
+        color="text.secondary"
+        textAlign="center"
+        sx={{ mb: 6 }}
+      >
         Entenda o fluxo de trabalho do sistema!
       </Typography>
 
@@ -151,19 +168,25 @@ export default function IndexPage() {
           px: { xs: 2, md: 4 },
         }}
       >
-        <Typography variant="h4" color="primary.main" fontWeight="bold" gutterBottom>
+        <Typography
+          variant="h4"
+          color="primary.main"
+          fontWeight="bold"
+          gutterBottom
+        >
           O que é o Vera AI?
         </Typography>
 
         <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-          O Vera AI é um sistema inteligente desenvolvido para simplificar e automatizar a fiscalização
-          de contratos administrativos.
+          O Vera AI é um sistema inteligente desenvolvido para simplificar e
+          automatizar a fiscalização de contratos administrativos.
         </Typography>
 
         <Typography variant="body1" color="text.secondary" sx={{ mb: 0 }}>
-          A fiscalização de contratos exige uma análise detalhada de diversos documentos e informações, 
-          tornando o processo longo e suscetível a erros humanos. Este sistema veio para permitir que fiscais e 
-          gestores possam conduzir suas análises de forma mais eficiente.
+          A fiscalização de contratos exige uma análise detalhada de diversos
+          documentos e informações, tornando o processo longo e suscetível a
+          erros humanos. Este sistema veio para permitir que fiscais e gestores
+          possam conduzir suas análises de forma mais eficiente.
         </Typography>
 
         {/* Animação */}
@@ -175,8 +198,8 @@ export default function IndexPage() {
             margin: '0 auto',
             marginTop: -10,
             display: 'block',
-            lineHeight: 0,         
-            paddingTop: 0, 
+            lineHeight: 0,
+            paddingTop: 0,
           }}
         />
       </Box>

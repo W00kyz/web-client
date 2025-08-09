@@ -4,8 +4,6 @@ import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import type { Authentication, Navigation } from '@toolpad/core/AppProvider';
 import SessionContext, { Session } from './hooks/useSession';
 import ptBr from './locales/ptbr';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import { createTheme } from '@mui/material';
 import type { User } from 'firebase/auth';
 import {
@@ -17,12 +15,10 @@ import { ptBR as datePtBR } from '@mui/x-date-pickers/locales';
 import { ptBR as gridPtBr } from '@mui/x-data-grid/locales';
 
 const NAVIGATION: Navigation = [
-  { kind: 'header', title: 'Main items' },
-  { title: 'Home', icon: <DashboardIcon /> },
+  { title: 'Home' },
   {
     title: 'Templates',
     segment: 'templates',
-    icon: <AssignmentIcon />,
     pattern: 'templates{/:templateId}*',
   },
 ];

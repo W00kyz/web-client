@@ -4,6 +4,9 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    exclude: ['msw/browser', 'msw/core/http'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src/'),
