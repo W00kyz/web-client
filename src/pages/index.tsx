@@ -89,7 +89,6 @@ export default function IndexPage() {
         Como utilizar o Vera AI?
       </Typography>
 
-      <LabelPanel templateTitle="Tester" labels={{ teste: ['ola'] }} />
       {/* Subtítulo */}
       <Typography
         variant="subtitle1"

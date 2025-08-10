@@ -1,3 +1,5 @@
+// LabelPanel.tsx
+import React, { useState } from 'react';
 import {
   Button,
   Chip,
@@ -10,10 +12,11 @@ import {
   Typography,
   InputBase,
 } from '@mui/material';
-import React, { useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useLabelExampleContext } from '@hooks/useLabelExample';
+import { TransitionGroup } from 'react-transition-group'; // ✅ Import adicionado para animações
 
 interface LabelCardProps {
   title: string;
@@ -63,29 +66,40 @@ const LabelCard = ({
       </Stack>
 
       {/* Lista de Exemplos com animação */}
-      <Collapse in={expanded} timeout="auto" unmountOnExit>
+      <Collapse in={expanded} timeout={300} unmountOnExit>
         <Stack gap={1} marginTop={1}>
-          {examples.map((example, idx) => (
-            <Stack key={idx} direction="row" spacing={1} alignItems="center">
-              <TextField
-                value={example}
-                variant="outlined"
-                size="small"
-                fullWidth
-              />
-              <IconButton
-                size="small"
-                color="inherit"
-                onClick={() => onRemoveExample?.(idx)}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-          ))}
+          <TransitionGroup>
+            {examples.map((example, idx) => (
+              <Collapse key={idx} timeout={300}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mb: 1 }}
+                >
+                  <TextField
+                    value={example}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    slotProps={{ input: { readOnly: true } }}
+                  />
+                  <IconButton
+                    size="small"
+                    color="inherit"
+                    onClick={() => onRemoveExample?.(idx)}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
+              </Collapse>
+            ))}
+          </TransitionGroup>
+
           <Button
             color="primary"
             variant="contained"
-            onClick={() => onSend}
+            onClick={onSend}
             disabled={disabledSend}
           >
             Enviar
@@ -96,86 +110,65 @@ const LabelCard = ({
   );
 };
 
-interface LabelPanelProps {
-  templateTitle?: string;
-  labels: Record<string, string[]>;
-}
-
-export const LabelPanel: React.FC<LabelPanelProps> = ({
-  templateTitle = 'Rótulos',
-  labels,
-}) => {
-  const [labelState, setLabelState] = useState(labels);
+export const LabelPanel = () => {
+  const { labels, removeExample, removeLabel } = useLabelExampleContext();
   const [visibleLabels, setVisibleLabels] = useState<Record<string, boolean>>(
     () => Object.fromEntries(Object.keys(labels).map((key) => [key, true]))
   );
-  const [, setSentLabels] = useState<Set<string>>(new Set());
-  const [title, setTitle] = useState(templateTitle);
 
   const handleRemoveExample = (labelKey: string, idx: number) => {
-    setLabelState((prev) => {
-      const updated = { ...prev };
-      updated[labelKey] = updated[labelKey].filter((_, i) => i !== idx);
-      return updated;
-    });
-  };
-
-  const handleSend = (labelKey: string) => {
-    setSentLabels((prev) => new Set(prev).add(labelKey));
+    removeExample(labelKey, idx);
   };
 
   const handleRemoveLabel = (labelKey: string) => {
     setVisibleLabels((prev) => ({ ...prev, [labelKey]: false }));
     setTimeout(() => {
-      setLabelState((prev) => {
-        const updated = { ...prev };
-        delete updated[labelKey];
-        return updated;
-      });
+      removeLabel(labelKey);
       setVisibleLabels((prev) => {
-        const updated = { ...prev };
-        delete updated[labelKey];
-        return updated;
+        const copy = { ...prev };
+        delete copy[labelKey];
+        return copy;
       });
-    }, 350);
+    }, 300);
   };
 
-  const labelKeys = Object.keys(labelState);
+  const labelKeys = Object.keys(labels);
 
   return (
     <Paper sx={{ minWidth: 300 }}>
       <Stack>
         <Stack marginX={2} marginY={labelKeys.length > 0 ? 0 : 1}>
           <InputBase
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value="Rótulos"
             sx={{
               fontFamily: "'Roboto', sans-serif",
               fontSize: '1.25rem',
               fontWeight: 500,
             }}
             fullWidth
+            readOnly
           />
         </Stack>
 
         {labelKeys.length > 0 && <Divider sx={{ my: 1 }} />}
 
-        {labelKeys.map((key, index) => (
-          <React.Fragment key={key}>
-            <Collapse in={visibleLabels[key]} timeout="auto" unmountOnExit>
+        {/* ✅ Animação para os cards */}
+        <TransitionGroup>
+          {labelKeys.map((key, index) => (
+            <Collapse key={key} timeout={300}>
               <LabelCard
                 title={key}
-                examples={labelState[key]}
+                examples={labels[key].examples.map((ex) => ex.text)}
                 isSection={index === 0}
-                disabledSend={labelState[key].length === 0}
+                disabledSend={labels[key].examples.length === 0}
                 onRemoveExample={(idx) => handleRemoveExample(key, idx)}
-                onSend={() => handleSend(key)}
+                onSend={() => {}}
                 onRemoveLabel={() => handleRemoveLabel(key)}
               />
+              {index < labelKeys.length - 1 && <Divider sx={{ my: 1 }} />}
             </Collapse>
-            {index < labelKeys.length - 1 && <Divider sx={{ my: 1 }} />}
-          </React.Fragment>
-        ))}
+          ))}
+        </TransitionGroup>
       </Stack>
     </Paper>
   );
