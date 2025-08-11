@@ -1,224 +1,178 @@
-import { Box, Typography } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
-import { steps } from '../constants/steps';
-import TimelineStep from '../components/TimelineStep';
-import Lottie from 'lottie-react';
-import aiAnimation from '../assets/json/vera-animation.json';
-import { Link } from 'react-router-dom';
-import { LabelPanel } from '@components/LabelPanel';
+import React from "react";
+import "./home.css";
+import veraImage from "../assets/images/verai.png";
+import { Link } from "react-router-dom";
 
-export default function IndexPage() {
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const timelineRef = useRef<HTMLDivElement | null>(null);
-  const lastStepRef = useRef<HTMLDivElement | null>(null);
-  const [activeStep, setActiveStep] = useState(0);
-  const [lineHeight, setLineHeight] = useState(0);
-  const visitedSteps = useRef<Set<number>>(new Set([0]));
-  const isUserScrolling = useRef(false);
-
-  const scrollToStep = (index: number) => {
-    const el = stepRefs.current[index];
-    if (el) {
-      isUserScrolling.current = true;
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveStep(index);
-      visitedSteps.current.add(index);
-      setTimeout(() => {
-        isUserScrolling.current = false;
-      }, 800);
-    }
-  };
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (isUserScrolling.current) return;
-        const mostVisible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        if (mostVisible) {
-          const index = Number(mostVisible.target.getAttribute('data-step'));
-          const canAdvance =
-            index > activeStep && visitedSteps.current.has(index - 1);
-          const canGoBack =
-            index < activeStep && visitedSteps.current.has(index + 1);
-          const isFirst = index === 0;
-
-          if (canAdvance || canGoBack || isFirst) {
-            setActiveStep(index);
-            visitedSteps.current.add(index);
-          }
-        }
-      },
-      { threshold: 0.3, rootMargin: '0px 0px -40% 0px' }
-    );
-
-    stepRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, [activeStep]);
-
-  useEffect(() => {
-    const updateLineHeight = () => {
-      if (!timelineRef.current || !lastStepRef.current) return;
-
-      const timelineTop =
-        timelineRef.current.getBoundingClientRect().top + window.scrollY;
-      const lastStepTop =
-        lastStepRef.current.getBoundingClientRect().top + window.scrollY;
-
-      const height = lastStepTop - timelineTop + 60;
-      setLineHeight(height);
-    };
-
-    updateLineHeight();
-    window.addEventListener('resize', updateLineHeight);
-    return () => window.removeEventListener('resize', updateLineHeight);
-  }, []);
-
+export default function Home() {
   return (
-    <Box sx={{ px: { xs: 2, md: 6 }, pt: 6, pb: 20, position: 'relative' }}>
-      {/* Título */}
-      <Typography
-        variant="h4"
-        color="primary.main"
-        textAlign="center"
-        fontWeight="bold"
-        gutterBottom
-      >
-        Como utilizar o Vera AI?
-      </Typography>
+    <main className="home">
+      {/* HERO */}
+      <section className="hero">
+        <div className="hero__grid">
+          <div className="hero__content">
+            <h1 className="hero__title">
+              Automação e Inteligência
+              <br /> para Fiscalização Administrativa
+            </h1>
+            <p className="hero__subtitle">
+              Padronize templates, processe documentos e gere relatórios com agilidade e precisão.
+            </p>
 
-      {/* Subtítulo */}
-      <Typography
-        variant="subtitle1"
-        color="text.secondary"
-        textAlign="center"
-        sx={{ mb: 6 }}
-      >
-        Entenda o fluxo de trabalho do sistema!
-      </Typography>
+            <div className="hero__cta">
+              <Link to="/templates" className="btn btn--primary">Começar Agora</Link>
+              <a href="#como-funciona" className="btn btn--ghost">Ver como funciona</a>
+            </div>
+          </div>
 
-      {/* Container da timeline */}
-      <Box ref={timelineRef} sx={{ position: 'relative' }}>
-        {/* Linha cinza contínua */}
-        <Box
-          sx={{
-            position: 'absolute',
-            left: '50%',
-            top: 0,
-            width: 2,
-            bottom: 0,
-            bgcolor: 'grey.300',
-            transform: 'translateX(-50%)',
-            zIndex: 0,
-          }}
-        />
+          {/* Ilustração simples em SVG (não depende de arquivo externo) */}
+          <div className="hero__illustration" aria-hidden="true">
+              <img src={veraImage} alt="Ilustração do Vera.AI" />
+          </div>
+        </div>
+      </section>
 
-        {/* Linha azul dinâmica */}
-        <Box
-          sx={{
-            position: 'absolute',
-            left: '50%',
-            top: 0,
-            width: 2,
-            bottom: 0,
-            bgcolor: 'grey.300',
-            transform: 'translateX(-50%)',
-            zIndex: 0,
-          }}
-        />
+      {/* SOBRE */}
+      <section className="about">
+        <div className="about__card">
+          <div className="about__icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M4 5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5z" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M13 3v4h4" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          </div>
+          <p className="about__text">
+            <strong>O Vera.<b>AI</b></strong> ajuda fiscais e administradores a gerenciar <b>templates</b>,
+            processar <b>documentos</b> e gerar <b>relatórios</b> com agilidade e precisão.
+          </p>
+        </div>
+      </section>
 
-        {/* Passos */}
-        {steps.map((step, index) => (
-          <Box
-            key={step.id}
-            ref={(el: HTMLDivElement | null) => {
-              stepRefs.current[index] = el;
-              if (index === steps.length - 1) lastStepRef.current = el;
-            }}
-            data-step={index}
-            sx={{
-              scrollMarginTop: '120px',
-              mb: 10,
-              position: 'relative',
-              zIndex: 2,
-            }}
-          >
-            <TimelineStep
-              step={step}
-              index={index}
-              isActive={index === activeStep}
-              isPast={index < activeStep}
-              isLast={index === steps.length - 1}
-              onClick={scrollToStep}
-            />
-          </Box>
-        ))}
-      </Box>
+      {/* COMO FUNCIONA */}
+      <section id="como-funciona" className="steps">
+        <h2 className="section-title">Como Funciona</h2>
 
-      {/* Seção do Vera AI */}
-      <Box
-        sx={{
-          maxWidth: 900,
-          mx: 'auto',
-          textAlign: 'center',
-          mt: 10,
-          px: { xs: 2, md: 4 },
-        }}
-      >
-        <Typography
-          variant="h4"
-          color="primary.main"
-          fontWeight="bold"
-          gutterBottom
-        >
-          O que é o Vera AI?
-        </Typography>
+        <ol className="steps__grid">
+          <Step number={1} title="Crie seu template" icon={<IconTemplate />} />
+          <Step number={2} title="Faça upload do documento" icon={<IconUpload />} />
+          <Step number={3} title="Extraia as informações" icon={<IconExtract />} />
+          <Step number={4} title="Gere relatórios" icon={<IconReport />} />
+        </ol>
+      </section>
 
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-          O Vera AI é um sistema inteligente desenvolvido para simplificar e
-          automatizar a fiscalização de contratos administrativos.
-        </Typography>
+      {/* BENEFÍCIOS */}
+      <section className="benefits">
+        <div className="benefits__card">
+          <Benefit icon={<IconZap />} title="Rápido e fácil de usar" />
+          <Benefit icon={<IconShield />} title="Seguro" />
+          <Benefit icon={<IconBars />} title="Relatórios precisos" />
+          <Benefit icon={<IconCloud />} title="Acesso em qualquer lugar" />
+        </div>
+      </section>
 
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 0 }}>
-          A fiscalização de contratos exige uma análise detalhada de diversos
-          documentos e informações, tornando o processo longo e suscetível a
-          erros humanos. Este sistema veio para permitir que fiscais e gestores
-          possam conduzir suas análises de forma mais eficiente.
-        </Typography>
+      {/* CTA FINAL */}
+      <section className="final-cta">
+        <Link to="/templates" className="btn btn--xl btn--primary">Começar!</Link>
+      </section>
 
-        {/* Animação */}
-        <Lottie
-          animationData={aiAnimation}
-          loop
-          style={{
-            maxWidth: 450,
-            margin: '0 auto',
-            marginTop: -10,
-            display: 'block',
-            lineHeight: 0,
-            paddingTop: 0,
-          }}
-        />
-      </Box>
+      <footer className="footer">
+        <span>© {new Date().getFullYear()} Vera.AI — Todos os direitos reservados.</span>
+      </footer>
+    </main>
+  );
+}
 
-      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <Link
-          to="/templates"
-          style={{
-            backgroundColor: '#1976d2',
-            color: 'white',
-            textDecoration: 'none',
-            padding: '12px 24px',
-            fontSize: '1rem',
-            borderRadius: '8px',
-            display: 'inline-block',
-          }}
-        >
-          Comece já!
-        </Link>
-      </Box>
-    </Box>
+/* ---------- Subcomponentes ---------- */
+
+function Step({ number, title, icon }: { number: number; title: string; icon: React.ReactNode }) {
+  return (
+    <li className="step">
+      <div className="step__badge">{number}</div>
+      <div className="step__icon">{icon}</div>
+      <h3 className="step__title">{title}</h3>
+    </li>
+  );
+}
+
+function Benefit({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="benefit">
+      <div className="benefit__icon">{icon}</div>
+      <span className="benefit__title">{title}</span>
+    </div>
+  );
+}
+
+/* ---------- Ícones (SVG inline) ---------- */
+
+function IconTemplate() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="u-stroke">
+      <rect x="4" y="3" width="12" height="18" rx="2" strokeWidth="1.8" />
+      <path d="M16 7h4v12a2 2 0 0 1-2 2h-2V7z" strokeWidth="1.8" />
+      <path d="M7.5 8.5h5M7.5 11.5h5" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconUpload() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="u-stroke">
+      <path d="M12 15V4" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M8 8l4-4 4 4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="4" y="16" width="16" height="4" rx="1.5" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function IconExtract() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="u-stroke">
+      <rect x="4" y="3" width="16" height="18" rx="2" strokeWidth="1.8" />
+      <path d="M8 8h8M8 12h8M8 16h5" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="18.5" cy="16.5" r="0.01" stroke="none" />
+    </svg>
+  );
+}
+
+function IconReport() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="u-stroke">
+      <path d="M5 20V10M10 20v-6M15 20v-9M20 20V8" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconZap() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="u-stroke">
+      <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconShield() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="u-stroke">
+      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" strokeWidth="1.8" />
+      <path d="M9.5 12.5l2 2 4-4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconBars() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="u-stroke">
+      <rect x="4" y="11" width="3" height="9" rx="1" strokeWidth="1.8" />
+      <rect x="10.5" y="7" width="3" height="13" rx="1" strokeWidth="1.8" />
+      <rect x="17" y="4" width="3" height="16" rx="1" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function IconCloud() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="u-stroke">
+      <path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 2" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   );
 }
