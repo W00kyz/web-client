@@ -1,5 +1,5 @@
 // LabelPanel.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Button,
   Chip,
@@ -11,19 +11,30 @@ import {
   TextField,
   Typography,
   InputBase,
+  Tooltip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useLabelExampleContext } from '@hooks/useLabelExample';
-import { TransitionGroup } from 'react-transition-group'; // ✅ Import adicionado para animações
+import { TransitionGroup } from 'react-transition-group';
+import { useLabelExampleContext, ExampleItem } from '@hooks/useLabelExample';
+import { useSession } from '@toolpad/core';
+import { useMutation } from '@hooks/useMutation';
+import {
+  CreatedRule,
+  CreateRuleInput,
+  templateRuleDataSource,
+} from '@datasources/template';
+import InfoIcon from '@mui/icons-material/Info';
 
 interface LabelCardProps {
   title: string;
-  examples: string[];
+  examples: ExampleItem[];
   isSection?: boolean;
   disabledSend?: boolean;
-  onSend?: () => void;
+  loading?: boolean;
+  error?: string | null;
+  onSend: () => void;
   onRemoveExample?: (idx: number) => void;
   onRemoveLabel?: () => void;
 }
@@ -33,15 +44,16 @@ const LabelCard = ({
   examples,
   isSection,
   disabledSend,
+  loading,
+  error,
   onSend,
   onRemoveExample,
   onRemoveLabel,
 }: LabelCardProps) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = React.useState(true);
 
   return (
     <Stack padding={1}>
-      {/* Cabeçalho */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Stack direction="row" alignItems="center" spacing={1}>
           <Typography fontFamily={"'Roboto', sans-serif"}>{title}</Typography>
@@ -54,55 +66,57 @@ const LabelCard = ({
             />
           )}
         </Stack>
-
         <Stack direction="row">
           <IconButton size="small" onClick={() => setExpanded((prev) => !prev)}>
             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </IconButton>
-          <IconButton size="small" onClick={onRemoveLabel}>
+          <IconButton size="small" onClick={onRemoveLabel} disabled={loading}>
             <CloseIcon />
           </IconButton>
         </Stack>
       </Stack>
 
-      {/* Lista de Exemplos com animação */}
       <Collapse in={expanded} timeout={300} unmountOnExit>
         <Stack gap={1} marginTop={1}>
           <TransitionGroup>
             {examples.map((example, idx) => (
               <Collapse key={idx} timeout={300}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  sx={{ mb: 1 }}
-                >
-                  <TextField
-                    value={example}
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    slotProps={{ input: { readOnly: true } }}
-                  />
-                  <IconButton
-                    size="small"
-                    color="inherit"
-                    onClick={() => onRemoveExample?.(idx)}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
+                <Stack direction="column" spacing={0.5} sx={{ mb: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <TextField
+                      value={example.text}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      slotProps={{ input: { readOnly: true } }}
+                    />
+                    <IconButton
+                      size="small"
+                      color="inherit"
+                      onClick={() => onRemoveExample?.(idx)}
+                      disabled={loading}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
                 </Stack>
               </Collapse>
             ))}
           </TransitionGroup>
 
+          {error && (
+            <Typography color="error" variant="body2">
+              {error}
+            </Typography>
+          )}
+
           <Button
             color="primary"
             variant="contained"
             onClick={onSend}
-            disabled={disabledSend}
+            disabled={disabledSend || loading}
           >
-            Enviar
+            {loading ? 'Enviando...' : 'Enviar'}
           </Button>
         </Stack>
       </Collapse>
@@ -110,59 +124,115 @@ const LabelCard = ({
   );
 };
 
-export const LabelPanel = () => {
+interface LabelPanelProps {
+  templateName: string;
+  setTemplateName: (name: string) => void;
+  onNewRegex: (regex: string) => void;
+}
+
+export const LabelPanel = ({
+  templateName,
+  setTemplateName,
+  onNewRegex,
+}: LabelPanelProps) => {
   const { labels, removeExample, removeLabel } = useLabelExampleContext();
-  const [visibleLabels, setVisibleLabels] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(Object.keys(labels).map((key) => [key, true]))
+  const { session } = useSession();
+
+  const { mutate, isLoading, error } = useMutation<
+    { data: CreateRuleInput; token?: string },
+    CreatedRule,
+    Error
+  >(async ({ data, token }) =>
+    templateRuleDataSource.createOne({ data, token })
   );
+
+  const [currentSendingLabel, setCurrentSendingLabel] = React.useState<
+    string | null
+  >(null);
 
   const handleRemoveExample = (labelKey: string, idx: number) => {
     removeExample(labelKey, idx);
   };
 
   const handleRemoveLabel = (labelKey: string) => {
-    setVisibleLabels((prev) => ({ ...prev, [labelKey]: false }));
     setTimeout(() => {
       removeLabel(labelKey);
-      setVisibleLabels((prev) => {
-        const copy = { ...prev };
-        delete copy[labelKey];
-        return copy;
-      });
     }, 300);
+  };
+
+  const handleSendClick = async (
+    labelKey: string,
+    examples: ExampleItem[],
+    isSection?: boolean
+  ) => {
+    setCurrentSendingLabel(labelKey);
+    await mutate(
+      {
+        data: {
+          documentId: 1,
+          selections: [{ key: labelKey, selections: examples }],
+          isSection: isSection ?? false,
+        },
+        token: session?.user.token,
+      },
+      {
+        onError: () => setCurrentSendingLabel(null),
+        onSuccess: (data) => {
+          setCurrentSendingLabel(null);
+          if (data?.pattern) {
+            onNewRegex(data.pattern);
+          }
+        },
+      }
+    );
   };
 
   const labelKeys = Object.keys(labels);
 
   return (
-    <Paper sx={{ minWidth: 300 }}>
+    <Paper variant="outlined" sx={{ minWidth: 300 }}>
       <Stack>
-        <Stack marginX={2} marginY={labelKeys.length > 0 ? 0 : 1}>
+        <Stack
+          direction={'row'}
+          spacing={1}
+          alignItems={'center'}
+          marginX={2}
+          marginY={labelKeys.length > 0 ? 0 : 1}
+        >
+          <Tooltip title="Rótulos são nomes para identificar dados relacionados, agrupam exemplos que são utilizados para extração de dados.">
+            <InfoIcon style={{ cursor: 'pointer' }} />
+          </Tooltip>
           <InputBase
-            value="Rótulos"
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder="Digite o nome do template"
             sx={{
               fontFamily: "'Roboto', sans-serif",
               fontSize: '1.25rem',
               fontWeight: 500,
             }}
             fullWidth
-            readOnly
           />
         </Stack>
 
         {labelKeys.length > 0 && <Divider sx={{ my: 1 }} />}
 
-        {/* ✅ Animação para os cards */}
         <TransitionGroup>
           {labelKeys.map((key, index) => (
             <Collapse key={key} timeout={300}>
               <LabelCard
                 title={key}
-                examples={labels[key].examples.map((ex) => ex.text)}
+                examples={labels[key].examples}
                 isSection={index === 0}
                 disabledSend={labels[key].examples.length === 0}
+                loading={isLoading && currentSendingLabel === key}
+                error={
+                  currentSendingLabel === key ? (error?.message ?? null) : null
+                }
                 onRemoveExample={(idx) => handleRemoveExample(key, idx)}
-                onSend={() => {}}
+                onSend={() =>
+                  handleSendClick(key, labels[key].examples, index === 0)
+                }
                 onRemoveLabel={() => handleRemoveLabel(key)}
               />
               {index < labelKeys.length - 1 && <Divider sx={{ my: 1 }} />}

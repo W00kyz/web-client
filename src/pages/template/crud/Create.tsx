@@ -9,7 +9,6 @@ import {
   TextField,
   Typography,
   CircularProgress,
-  Divider,
 } from '@mui/material';
 import { PageContainer } from '@toolpad/core';
 
@@ -17,12 +16,15 @@ import { fileUploadDataSource } from '@datasources/upload';
 import { useMutation } from '@hooks/useMutation';
 import { MarkdownHighlighter } from '@components/MarkdownHighlighter';
 import { LabelPanel } from '@components/LabelPanel';
+import { useSession } from '@hooks/useSession';
 
 export const CreateTemplate = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [templateName, setTemplateName] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploadedMd, setUploadedMd] = useState<string>('');
+  const [regex, setRegex] = useState<string | null>(null);
+  const { session } = useSession();
 
   const { mutate, isLoading, error } = useMutation(
     fileUploadDataSource.uploadFile,
@@ -43,12 +45,13 @@ export const CreateTemplate = () => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
       setUploadedMd('');
+      setRegex(null); // reset regex ao mudar arquivo
     }
   };
 
   useEffect(() => {
     if (file) {
-      mutate({ file });
+      mutate({ file, token: session?.user.token });
     }
   }, [file]);
 
@@ -57,7 +60,7 @@ export const CreateTemplate = () => {
       <LabelExampleProvider>
         <Stack spacing={2}>
           <Stepper activeStep={activeStep} alternativeLabel>
-            {['Informar dados do Template', 'Definir Labels'].map((label) => (
+            {['Informar dados do Template', 'Definir Rótulo'].map((label) => (
               <Step key={label}>
                 <StepLabel>{label}</StepLabel>
               </Step>
@@ -102,23 +105,29 @@ export const CreateTemplate = () => {
           )}
 
           {activeStep === 1 && (
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="flex-start"
-              sx={{ mt: 2 }}
-            >
-              <MarkdownHighlighter
-                nameFile={file?.name ?? ''}
-                markdownContent={uploadedMd}
-              />
-              <Divider orientation="vertical" flexItem />
-              <LabelPanel />
-            </Stack>
-          )}
-          {activeStep === 1 && (
-            <Stack direction="row" spacing={1} mt={2}>
-              <Button onClick={handleBack}>Voltar</Button>
+            <Stack>
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="flex-start"
+                sx={{ mt: 2 }}
+              >
+                <Stack>
+                  <MarkdownHighlighter
+                    nameFile={file?.name ?? ''}
+                    markdownContent={uploadedMd}
+                    highlightRegex={regex}
+                  />
+                  <Button onClick={handleBack} sx={{ mt: 1 }}>
+                    Voltar
+                  </Button>
+                </Stack>
+                <LabelPanel
+                  templateName={templateName}
+                  setTemplateName={setTemplateName}
+                  onNewRegex={(newRegex) => setRegex(newRegex)}
+                />
+              </Stack>
             </Stack>
           )}
         </Stack>

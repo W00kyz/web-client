@@ -41,6 +41,16 @@ export const ListTemplates = ({
             }}
             disableRowSelectionOnClick
             onRowClick={(params) => onRowClick(params.id)}
+            sx={{
+              backgroundColor: '#ffffff', // fundo geral da tabela
+              '& .MuiDataGrid-columnHeaders': {
+                backgroundColor: '#ffffff !important', // fundo do cabeçalho
+                borderBottom: '1px solid rgba(224, 224, 224, 1)', // borda abaixo do cabeçalho
+              },
+              '& .MuiDataGrid-columnHeaderTitle': {
+                color: 'black', // cor do texto do cabeçalho, opcional
+              },
+            }}
           />
         </Stack>
       </Section>

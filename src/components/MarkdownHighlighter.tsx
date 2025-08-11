@@ -1,85 +1,66 @@
+import React, { useState, useRef } from 'react';
 import {
-  Button,
-  Divider,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  IconButton,
   Paper,
   Stack,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Divider,
   Box,
-  TextField,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
   DialogActions,
+  IconButton,
+  TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState } from 'react';
 import { useLabelExampleContext } from '@hooks/useLabelExample';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+interface MarkdownHighlighterProps {
+  nameFile: string;
+  markdownContent: string;
+  highlightRegex?: string | null;
+}
 
-// Componentes customizados para ReactMarkdown
 const markdownComponents: Components = {
   h1: ({ node, ...props }) => (
     <>
       <Typography
         variant="h4"
-        sx={{
-          fontFamily: 'Roboto, sans-serif',
-          fontWeight: 500,
-          mt: 2,
-          mb: 1,
-        }}
+        sx={{ fontFamily: 'Roboto, sans-serif', fontWeight: 500, mt: 2, mb: 1 }}
         {...props}
       />
       <Divider sx={{ mb: 2 }} />
     </>
   ),
-  p: ({ node, ...props }) => (
+  p: ({ node, children, ...props }) => (
     <Typography
       variant="body1"
-      sx={{
-        fontFamily: 'Roboto, sans-serif',
-        mb: 1,
-      }}
+      sx={{ fontFamily: 'Roboto, sans-serif', mb: 1 }}
       {...props}
-    />
+    >
+      {children}
+    </Typography>
   ),
   table: ({ node, ...props }) => (
-    <Box
-      sx={{
-        overflowX: 'auto',
-        width: '100%',
-        display: 'block',
-      }}
-    >
-      <TableContainer
-        component={Paper}
-        sx={{
-          my: 2,
-          border: '1px solid #ddd',
-          borderRadius: 1,
-          width: '100%',
-          display: 'block',
-        }}
+    <Box sx={{ overflowX: 'auto', width: '100%', display: 'block' }}>
+      <Paper
+        variant="outlined"
+        sx={{ my: 2, borderRadius: 1, width: '100%', display: 'block' }}
       >
-        <Table size="small" {...props} />
-      </TableContainer>
+        <table {...props} />
+      </Paper>
     </Box>
   ),
-  thead: ({ node, ...props }) => <TableHead {...props} />,
-  tbody: ({ node, ...props }) => <TableBody {...props} />,
-  tr: ({ node, ...props }) => <TableRow {...props} />,
+  thead: ({ node, ...props }) => <thead {...props} />,
+  tbody: ({ node, ...props }) => <tbody {...props} />,
+  tr: ({ node, ...props }) => <tr {...props} />,
   th: ({ node, ...props }) => (
-    <TableCell
-      sx={{
+    <th
+      style={{
         fontWeight: 'bold',
         fontFamily: 'Roboto, sans-serif',
         backgroundColor: '#f5f5f5',
@@ -89,24 +70,19 @@ const markdownComponents: Components = {
     />
   ),
   td: ({ node, ...props }) => (
-    <TableCell
-      sx={{
-        fontFamily: 'Roboto, sans-serif',
-        whiteSpace: 'nowrap',
-      }}
+    <td
+      style={{ fontFamily: 'Roboto, sans-serif', whiteSpace: 'nowrap' }}
       {...props}
     />
   ),
 };
 
-interface MarkdownHighlighterProps {
-  nameFile: string;
-  markdownContent: string;
-}
+const CONTEXT_WORDS_TOTAL = 6; // N = 6 (exemplo: 3 antes + 3 depois)
 
 export const MarkdownHighlighter = ({
   nameFile,
   markdownContent,
+  highlightRegex,
 }: MarkdownHighlighterProps) => {
   const [openFullscreen, setOpenFullscreen] = useState(false);
   const [selection, setSelection] = useState<string>('');
@@ -117,8 +93,54 @@ export const MarkdownHighlighter = ({
 
   const { addOrUpdateLabel } = useLabelExampleContext();
 
+  const fullTextRef = useRef(markdownContent); // Referência para o texto total
+
   const handleOpenFullscreen = () => setOpenFullscreen(true);
   const handleCloseFullscreen = () => setOpenFullscreen(false);
+
+  // Função para obter o contexto em volta da seleção
+  const getContextWords = (
+    fullText: string,
+    selectedText: string,
+    n: number
+  ): string[] => {
+    if (!selectedText) return [];
+
+    // Normaliza espaços
+    const textNormalized = fullText.replace(/\s+/g, ' ').trim();
+
+    // Divide texto em palavras
+    const words = textNormalized.split(' ');
+
+    // Para achar posição da seleção no texto total, usar índice da seleção no texto
+    const startIndex = textNormalized.indexOf(selectedText);
+
+    if (startIndex === -1) return [];
+
+    // Para mapear palavra índice para posição caractere, reconstruir palavras acumuladas
+    let charCount = 0;
+    let startWordIdx = -1;
+    let endWordIdx = -1;
+    for (let i = 0; i < words.length; i++) {
+      if (charCount === startIndex) startWordIdx = i;
+      if (
+        startWordIdx !== -1 &&
+        charCount + words[i].length >= startIndex + selectedText.length
+      ) {
+        endWordIdx = i;
+        break;
+      }
+      charCount += words[i].length + 1; // +1 para espaço
+    }
+    if (startWordIdx === -1 || endWordIdx === -1) return [];
+
+    const halfN = Math.floor(n / 2);
+
+    const contextStart = Math.max(0, startWordIdx - halfN);
+    const contextEnd = Math.min(words.length - 1, endWordIdx + halfN);
+
+    return words.slice(contextStart, contextEnd + 1);
+  };
 
   const handleMouseUp = () => {
     const selectedText = window.getSelection()?.toString().trim() ?? '';
@@ -126,6 +148,10 @@ export const MarkdownHighlighter = ({
       setSelection(selectedText);
       setExampleInput(selectedText);
       setLabelInput('');
+
+      // Atualiza o texto completo para pegar o contexto correto
+      fullTextRef.current = markdownContent;
+
       setOpenModal(true);
     }
   };
@@ -139,46 +165,124 @@ export const MarkdownHighlighter = ({
 
   const handleConfirm = () => {
     if (labelInput.trim() && exampleInput.trim()) {
+      // Gera contexto
+      const context = getContextWords(
+        fullTextRef.current,
+        selection,
+        CONTEXT_WORDS_TOTAL
+      );
+
       addOrUpdateLabel(labelInput.trim(), {
         text: exampleInput.trim(),
-        context: [],
+        context,
       });
       handleModalClose();
     }
   };
 
+  // Regex para highlight
+  let regex: RegExp | null = null;
+  try {
+    if (highlightRegex) regex = new RegExp(highlightRegex, 'gi');
+  } catch {
+    regex = null;
+  }
+
+  // Função para quebrar texto em partes e destacar matches
+  const renderTextWithHighlight = (text: string) => {
+    if (!regex) return text;
+
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      const start = match.index;
+      const end = regex.lastIndex;
+
+      if (start > lastIndex) {
+        parts.push(text.substring(lastIndex, start));
+      }
+
+      parts.push(
+        <mark key={start} style={{ backgroundColor: 'yellow' }}>
+          {text.substring(start, end)}
+        </mark>
+      );
+
+      lastIndex = end;
+      if (start === end) {
+        // Evitar loop infinito para regex que casa string vazia
+        regex.lastIndex++;
+      }
+    }
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    return parts;
+  };
+
+  // Custom p para highlight
+  const components: Components = {
+    ...markdownComponents,
+    p: ({ node, children, ...props }) => {
+      // children pode ser string ou array
+      const text =
+        typeof children === 'string'
+          ? children
+          : children.map((c) => (typeof c === 'string' ? c : '')).join('');
+      return (
+        <Typography
+          variant="body1"
+          sx={{ fontFamily: 'Roboto, sans-serif', mb: 1 }}
+          {...props}
+        >
+          {renderTextWithHighlight(text)}
+        </Typography>
+      );
+    },
+  };
+
   return (
     <>
-      <Paper sx={{ width: '100%', maxWidth: 1200, minWidth: 600 }}>
-        <Stack>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            px={2}
-          >
-            <Typography
-              variant="h6"
-              sx={{
-                fontFamily: 'Roboto, sans-serif',
-                fontWeight: 'bold',
-                fontSize: '1.25rem',
-              }}
+      <Paper
+        variant="outlined"
+        sx={{ width: '100%', maxWidth: 1200, minWidth: 600 }}
+      >
+        <Stack my={1}>
+          <Stack>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              px={2}
             >
-              {nameFile}
-            </Typography>
-
-            <Stack direction="row" spacing={1} alignItems="center">
-              <IconButton
-                aria-label="fullscreen"
-                onClick={handleOpenFullscreen}
-                size="small"
+              <Typography
+                variant="h6"
+                sx={{
+                  fontFamily: 'Roboto, sans-serif',
+                  fontWeight: 'bold',
+                  fontSize: '1.25rem',
+                }}
               >
-                <FullscreenIcon />
-              </IconButton>
-              <IconButton size="small">
-                <CloseIcon />
-              </IconButton>
+                {nameFile}
+              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <IconButton
+                  aria-label="fullscreen"
+                  onClick={handleOpenFullscreen}
+                  size="small"
+                >
+                  <FullscreenIcon />
+                </IconButton>
+              </Stack>
+            </Stack>
+            <Stack direction={'row'} spacing={1} mx={2} alignItems={'center'}>
+              <InfoOutlineIcon />
+              <Typography variant="subtitle1">
+                Selecione um parte de texto abaixo para criar um rótulo com
+                exemplo.
+              </Typography>
             </Stack>
           </Stack>
 
@@ -201,7 +305,7 @@ export const MarkdownHighlighter = ({
           >
             {hasContent ? (
               <ReactMarkdown
-                components={markdownComponents}
+                components={components}
                 remarkPlugins={[remarkGfm]}
               >
                 {markdownContent}
@@ -218,53 +322,51 @@ export const MarkdownHighlighter = ({
               </Typography>
             )}
           </Box>
-
-          <Divider sx={{ my: 2 }} />
-
-          <Stack
-            direction={'row'}
-            alignItems={'center'}
-            justifyContent={'center'}
-          >
-            <Button
-              variant="contained"
-              color="primary"
-              disabled={!hasContent}
-              sx={{ minWidth: '200px', marginBottom: 2 }}
-            >
-              Salvar
-            </Button>
-          </Stack>
         </Stack>
       </Paper>
 
-      <Dialog open={openModal} onClose={handleModalClose}>
-        <DialogTitle>Adicionar Rótulo para seleção</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1, minWidth: 400 }}>
+      <Dialog
+        open={openModal}
+        onClose={handleModalClose}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          Adicionar Exemplo para Rótulo
+          <IconButton
+            aria-label="close"
+            onClick={handleModalClose}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+            size="small"
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Stack spacing={2}>
             <TextField
               label="Rótulo"
               value={labelInput}
               onChange={(e) => setLabelInput(e.target.value)}
-              fullWidth
               autoFocus
+              fullWidth
             />
             <TextField
               label="Exemplo"
               value={exampleInput}
-              multiline
-              rows={3}
               onChange={(e) => setExampleInput(e.target.value)}
               fullWidth
             />
           </Stack>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={handleModalClose}>Cancelar</Button>
           <Button
-            variant="contained"
             onClick={handleConfirm}
             disabled={!labelInput.trim() || !exampleInput.trim()}
+            variant="contained"
           >
             Confirmar
           </Button>
@@ -274,55 +376,61 @@ export const MarkdownHighlighter = ({
       <Dialog
         open={openFullscreen}
         onClose={handleCloseFullscreen}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            width: '21cm',
-            height: '29.7cm',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            padding: 3,
-            overflowY: 'auto',
-            boxSizing: 'border-box',
-          },
+        slotProps={{
+          paper: { sx: { width: '100%', maxWidth: '794px', height: '90vh' } },
         }}
       >
-        <DialogTitle
-          sx={{ fontWeight: 'bold', fontFamily: 'Roboto, sans-serif' }}
-        >
-          {nameFile}
-          <IconButton
-            aria-label="close"
-            onClick={handleCloseFullscreen}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-            }}
-            size="small"
+        <Stack sx={{ p: 2, height: '100%', boxSizing: 'border-box' }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
           >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent dividers>
-          {hasContent ? (
-            <ReactMarkdown
-              components={markdownComponents}
-              remarkPlugins={[remarkGfm]}
-            >
-              {markdownContent}
-            </ReactMarkdown>
-          ) : (
             <Typography
-              variant="body2"
-              sx={{ fontFamily: 'Roboto, sans-serif', color: 'text.secondary' }}
+              variant="h5"
+              sx={{ fontFamily: 'Roboto, sans-serif', fontWeight: 'bold' }}
             >
-              Não foi possível obter o conteúdo.
+              {nameFile}
             </Typography>
-          )}
-        </DialogContent>
+            <IconButton aria-label="close" onClick={handleCloseFullscreen}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+
+          <Divider sx={{ my: 1 }} />
+
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflowY: 'auto',
+              overflowX: 'auto',
+              width: '100%',
+              boxSizing: 'border-box',
+              cursor: 'text',
+              userSelect: 'text',
+            }}
+            onMouseUp={handleMouseUp}
+          >
+            {hasContent ? (
+              <ReactMarkdown
+                components={components}
+                remarkPlugins={[remarkGfm]}
+              >
+                {markdownContent}
+              </ReactMarkdown>
+            ) : (
+              <Typography
+                variant="body2"
+                sx={{
+                  fontFamily: 'Roboto, sans-serif',
+                  color: 'text.secondary',
+                }}
+              >
+                Não foi possível obter o conteúdo.
+              </Typography>
+            )}
+          </Box>
+        </Stack>
       </Dialog>
     </>
   );

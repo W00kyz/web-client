@@ -30,8 +30,7 @@ export const templateRuleDataSource = {
     token?: string;
   }): Promise<CreatedRule> => {
     try {
-      console.log(data)
-
+      console.log(data);
       const response = await fetch(`${API_URL}/document/generate-regex`, {
         method: 'POST',
         headers: {
