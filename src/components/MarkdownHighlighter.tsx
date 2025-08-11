@@ -19,65 +19,14 @@ import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useLabelExampleContext } from '@hooks/useLabelExample';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+
 interface MarkdownHighlighterProps {
   nameFile: string;
   markdownContent: string;
   highlightRegex?: string | null;
 }
 
-const markdownComponents: Components = {
-  h1: ({ node, ...props }) => (
-    <>
-      <Typography
-        variant="h4"
-        sx={{ fontFamily: 'Roboto, sans-serif', fontWeight: 500, mt: 2, mb: 1 }}
-        {...props}
-      />
-      <Divider sx={{ mb: 2 }} />
-    </>
-  ),
-  p: ({ node, children, ...props }) => (
-    <Typography
-      variant="body1"
-      sx={{ fontFamily: 'Roboto, sans-serif', mb: 1 }}
-      {...props}
-    >
-      {children}
-    </Typography>
-  ),
-  table: ({ node, ...props }) => (
-    <Box sx={{ overflowX: 'auto', width: '100%', display: 'block' }}>
-      <Paper
-        variant="outlined"
-        sx={{ my: 2, borderRadius: 1, width: '100%', display: 'block' }}
-      >
-        <table {...props} />
-      </Paper>
-    </Box>
-  ),
-  thead: ({ node, ...props }) => <thead {...props} />,
-  tbody: ({ node, ...props }) => <tbody {...props} />,
-  tr: ({ node, ...props }) => <tr {...props} />,
-  th: ({ node, ...props }) => (
-    <th
-      style={{
-        fontWeight: 'bold',
-        fontFamily: 'Roboto, sans-serif',
-        backgroundColor: '#f5f5f5',
-        whiteSpace: 'nowrap',
-      }}
-      {...props}
-    />
-  ),
-  td: ({ node, ...props }) => (
-    <td
-      style={{ fontFamily: 'Roboto, sans-serif', whiteSpace: 'nowrap' }}
-      {...props}
-    />
-  ),
-};
-
-const CONTEXT_WORDS_TOTAL = 6; // N = 6 (exemplo: 3 antes + 3 depois)
+const CONTEXT_WORDS_TOTAL = 20; // N = 6 (exemplo: 3 antes + 3 depois)
 
 export const MarkdownHighlighter = ({
   nameFile,
@@ -99,47 +48,68 @@ export const MarkdownHighlighter = ({
   const handleCloseFullscreen = () => setOpenFullscreen(false);
 
   // Função para obter o contexto em volta da seleção
+  // Alterado getContextWords para capturar contexto mais preciso
   const getContextWords = (
     fullText: string,
     selectedText: string,
     n: number
   ): string[] => {
+    console.log('fulltext: \n', fullText);
+    console.log('selected text:\n', selectedText);
+
     if (!selectedText) return [];
 
-    // Normaliza espaços
-    const textNormalized = fullText.replace(/\s+/g, ' ').trim();
-
-    // Divide texto em palavras
-    const words = textNormalized.split(' ');
-
-    // Para achar posição da seleção no texto total, usar índice da seleção no texto
-    const startIndex = textNormalized.indexOf(selectedText);
+    // Usa texto original para índices
+    const startIndex = fullText.indexOf(selectedText);
 
     if (startIndex === -1) return [];
 
-    // Para mapear palavra índice para posição caractere, reconstruir palavras acumuladas
+    // Divide em tokens preservando espaços, quebras de linha e pontuação
+    const words = fullText.split(/(\s+|\b)/).filter(Boolean);
+
+    console.log(words);
+
+    // Localiza índices de palavra correspondentes ao início e fim da seleção
     let charCount = 0;
     let startWordIdx = -1;
     let endWordIdx = -1;
+
     for (let i = 0; i < words.length; i++) {
-      if (charCount === startIndex) startWordIdx = i;
+      const word = words[i];
+      const wordStart = charCount;
+      const wordEnd = charCount + word.length;
+
       if (
-        startWordIdx !== -1 &&
-        charCount + words[i].length >= startIndex + selectedText.length
+        startWordIdx === -1 &&
+        wordStart <= startIndex &&
+        startIndex < wordEnd
+      ) {
+        startWordIdx = i;
+      }
+      if (
+        wordStart < startIndex + selectedText.length &&
+        startIndex + selectedText.length <= wordEnd
       ) {
         endWordIdx = i;
         break;
       }
-      charCount += words[i].length + 1; // +1 para espaço
+      charCount += word.length;
     }
+
     if (startWordIdx === -1 || endWordIdx === -1) return [];
 
     const halfN = Math.floor(n / 2);
-
     const contextStart = Math.max(0, startWordIdx - halfN);
     const contextEnd = Math.min(words.length - 1, endWordIdx + halfN);
 
-    return words.slice(contextStart, contextEnd + 1);
+    const xpto = words
+      .slice(contextStart, contextEnd + 1)
+      .join('')
+      .split(/\s+/);
+
+    console.log(xpto);
+
+    return xpto;
   };
 
   const handleMouseUp = () => {
@@ -148,10 +118,7 @@ export const MarkdownHighlighter = ({
       setSelection(selectedText);
       setExampleInput(selectedText);
       setLabelInput('');
-
-      // Atualiza o texto completo para pegar o contexto correto
       fullTextRef.current = markdownContent;
-
       setOpenModal(true);
     }
   };
@@ -165,15 +132,13 @@ export const MarkdownHighlighter = ({
 
   const handleConfirm = () => {
     if (labelInput.trim() && exampleInput.trim()) {
-      // Gera contexto
       const context = getContextWords(
         fullTextRef.current,
         selection,
         CONTEXT_WORDS_TOTAL
       );
-
       addOrUpdateLabel(labelInput.trim(), {
-        text: exampleInput.trim(),
+        values: exampleInput.trim(),
         context,
       });
       handleModalClose();
@@ -212,7 +177,6 @@ export const MarkdownHighlighter = ({
 
       lastIndex = end;
       if (start === end) {
-        // Evitar loop infinito para regex que casa string vazia
         regex.lastIndex++;
       }
     }
@@ -222,15 +186,27 @@ export const MarkdownHighlighter = ({
     return parts;
   };
 
-  // Custom p para highlight
+  // Custom components para markdown
   const components: Components = {
-    ...markdownComponents,
+    h1: ({ node, ...props }) => (
+      <>
+        <Typography
+          variant="h4"
+          sx={{
+            fontFamily: 'Roboto, sans-serif',
+            fontWeight: 500,
+            mt: 2,
+            mb: 1,
+          }}
+          {...props}
+        />
+        <Divider sx={{ mb: 2 }} />
+      </>
+    ),
     p: ({ node, children, ...props }) => {
-      // children pode ser string ou array
-      const text =
-        typeof children === 'string'
-          ? children
-          : children.map((c) => (typeof c === 'string' ? c : '')).join('');
+      const text = React.Children.toArray(children)
+        .map((c) => (typeof c === 'string' ? c : ''))
+        .join('');
       return (
         <Typography
           variant="body1"
@@ -241,6 +217,36 @@ export const MarkdownHighlighter = ({
         </Typography>
       );
     },
+    table: ({ node, ...props }) => (
+      <Box sx={{ overflowX: 'auto', width: '100%', display: 'block' }}>
+        <Paper
+          variant="outlined"
+          sx={{ my: 2, borderRadius: 1, width: '100%', display: 'block' }}
+        >
+          <table {...props} />
+        </Paper>
+      </Box>
+    ),
+    thead: ({ node, ...props }) => <thead {...props} />,
+    tbody: ({ node, ...props }) => <tbody {...props} />,
+    tr: ({ node, ...props }) => <tr {...props} />,
+    th: ({ node, ...props }) => (
+      <th
+        style={{
+          fontWeight: 'bold',
+          fontFamily: 'Roboto, sans-serif',
+          backgroundColor: '#f5f5f5',
+          whiteSpace: 'nowrap',
+        }}
+        {...props}
+      />
+    ),
+    td: ({ node, ...props }) => (
+      <td
+        style={{ fontFamily: 'Roboto, sans-serif', whiteSpace: 'nowrap' }}
+        {...props}
+      />
+    ),
   };
 
   return (

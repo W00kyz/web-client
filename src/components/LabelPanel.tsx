@@ -18,7 +18,6 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TransitionGroup } from 'react-transition-group';
 import { useLabelExampleContext, ExampleItem } from '@hooks/useLabelExample';
-import { useSession } from '@toolpad/core';
 import { useMutation } from '@hooks/useMutation';
 import {
   CreatedRule,
@@ -26,6 +25,7 @@ import {
   templateRuleDataSource,
 } from '@datasources/template';
 import InfoIcon from '@mui/icons-material/Info';
+import { useSession } from '@hooks/useSession';
 
 interface LabelCardProps {
   title: string;
@@ -84,7 +84,7 @@ const LabelCard = ({
                 <Stack direction="column" spacing={0.5} sx={{ mb: 1 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <TextField
-                      value={example.text}
+                      value={example.values}
                       variant="outlined"
                       size="small"
                       fullWidth

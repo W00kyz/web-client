@@ -8,16 +8,15 @@ export const fileUploadDataSource = {
     file: File;
     token?: string;
   }): Promise<{ document_md: string }> => {
-    // Mock temporário: simula delay e resposta
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // // Mock temporário: simula delay e resposta
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Retorno mock
-    return {
-      document_md: `# Documento mock para arquivo: ${file.name}\n\nConteúdo do arquivo processado mock.`,
-    };
+    // // Retorno mock
+    // return {
+    //   document_md: `# Documento mock para arquivo: ${file.name}\n\nConteúdo do arquivo processado mock.`,
+    // };
 
     // Para usar requisição real, descomente o código abaixo e remova o mock:
-    /*
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -40,6 +39,5 @@ export const fileUploadDataSource = {
       console.error('Erro no uploadFile:', error);
       throw error;
     }
-    */
   },
 };
