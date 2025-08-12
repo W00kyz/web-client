@@ -54,22 +54,21 @@ export const MarkdownHighlighter = ({
     selectedText: string,
     n: number
   ): string[] => {
-    console.log('fulltext: \n', fullText);
-    console.log('selected text:\n', selectedText);
-
     if (!selectedText) return [];
 
-    // Usa texto original para índices
-    const startIndex = fullText.indexOf(selectedText);
+    const normalizedSelectedText = selectedText.replace(/\s+/g, ' ').trim();
 
-    if (startIndex === -1) return [];
+    const escapedText = normalizedSelectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchPattern = new RegExp(escapedText.replace(/\s+/g, '\\s+'), 'g');
 
-    // Divide em tokens preservando espaços, quebras de linha e pontuação
+    const startIndex = fullText.search(searchPattern);
+
+    if (startIndex === -1) {
+      return [];
+    }
+
     const words = fullText.split(/(\s+|\b)/).filter(Boolean);
 
-    console.log(words);
-
-    // Localiza índices de palavra correspondentes ao início e fim da seleção
     let charCount = 0;
     let startWordIdx = -1;
     let endWordIdx = -1;
@@ -102,14 +101,12 @@ export const MarkdownHighlighter = ({
     const contextStart = Math.max(0, startWordIdx - halfN);
     const contextEnd = Math.min(words.length - 1, endWordIdx + halfN);
 
-    const xpto = words
+    const contextWords = words
       .slice(contextStart, contextEnd + 1)
       .join('')
       .split(/\s+/);
 
-    console.log(xpto);
-
-    return xpto;
+    return contextWords;
   };
 
   const handleMouseUp = () => {
