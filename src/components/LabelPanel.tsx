@@ -166,13 +166,21 @@ export const LabelPanel = ({
     isSection?: boolean
   ) => {
     setCurrentSendingLabel(labelKey);
+
+    // Montar o objeto conforme o formato solicitado
+    const formattedData = {
+      documentId: 1,
+      isSection: isSection ?? false,
+      key: labelKey,
+      selections: examples.map((ex) => ({
+        values: ex.values,
+        context: ex.context,
+      })),
+    };
+
     await mutate(
       {
-        data: {
-          documentId: 1,
-          selections: [{ key: labelKey, selections: examples }],
-          isSection: isSection ?? false,
-        },
+        data: formattedData,
         token: session?.user.token,
       },
       {
