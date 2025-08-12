@@ -47,66 +47,84 @@ export const MarkdownHighlighter = ({
   const handleOpenFullscreen = () => setOpenFullscreen(true);
   const handleCloseFullscreen = () => setOpenFullscreen(false);
 
-  // Função para obter o contexto em volta da seleção
-  // Alterado getContextWords para capturar contexto mais preciso
   const getContextWords = (
     fullText: string,
-    selectedText: string,
-    n: number
-  ): string[] => {
-    if (!selectedText) return [];
+    selectedText: string
+  ): string => {
+    if (!fullText || !selectedText) {
+      return "";
+    }
 
-    const normalizedSelectedText = selectedText.replace(/\s+/g, ' ').trim();
-
-    const escapedText = normalizedSelectedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const searchPattern = new RegExp(escapedText.replace(/\s+/g, '\\s+'), 'g');
-
+    // --- 1. Encontrar um ponto de partida confiável (mesma lógica de antes) ---
+    const searchSnippet = selectedText.substring(0, 70);
+    const normalizedSnippet = searchSnippet.replace(/\s+/g, " ").trim();
+    const escapedSnippet = normalizedSnippet.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+    const searchPattern = new RegExp(escapedSnippet.replace(/\s+/g, "\\s+"));
     const startIndex = fullText.search(searchPattern);
 
     if (startIndex === -1) {
-      return [];
+      return selectedText; // Retorna a seleção se não encontrar o início
     }
 
-    const words = fullText.split(/(\s+|\b)/).filter(Boolean);
+    // --- 2. Criar um mapa de "palavras" do documento inteiro ---
+    // Esta é a mudança crucial: usamos uma definição consistente de palavra.
+    const wordsInDoc = [];
+    // A regex /\S+/g encontra sequências de caracteres que não são espaços.
+    // A flag 'd' (disponível em engines JS modernas) nos dá os índices de início/fim.
+    const wordRegex = /\S+/gd; 
+    let match;
+    while ((match = wordRegex.exec(fullText)) !== null) {
+      wordsInDoc.push({
+        text: match[0],
+        start: match.indices[0][0],
+        end: match.indices[0][1],
+      });
+    }
 
-    let charCount = 0;
-    let startWordIdx = -1;
-    let endWordIdx = -1;
-
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i];
-      const wordStart = charCount;
-      const wordEnd = charCount + word.length;
-
-      if (
-        startWordIdx === -1 &&
-        wordStart <= startIndex &&
-        startIndex < wordEnd
-      ) {
-        startWordIdx = i;
-      }
-      if (
-        wordStart < startIndex + selectedText.length &&
-        startIndex + selectedText.length <= wordEnd
-      ) {
-        endWordIdx = i;
+    // --- 3. Encontrar o índice da palavra onde a seleção começa ---
+    let startWordIndex = -1;
+    for (let i = 0; i < wordsInDoc.length; i++) {
+      // Se o caractere inicial da busca está dentro desta palavra
+      if (wordsInDoc[i].start <= startIndex && startIndex < wordsInDoc[i].end) {
+        startWordIndex = i;
         break;
       }
-      charCount += word.length;
     }
 
-    if (startWordIdx === -1 || endWordIdx === -1) return [];
+    if (startWordIndex === -1) {
+      return selectedText; // Fallback de segurança
+    }
 
-    const halfN = Math.floor(n / 2);
-    const contextStart = Math.max(0, startWordIdx - halfN);
-    const contextEnd = Math.min(words.length - 1, endWordIdx + halfN);
+    // --- 4. Calcular os índices do contexto usando simples aritmética ---
+    const CONTEXT_WORD_COUNT = 20;
 
-    const contextWords = words
-      .slice(contextStart, contextEnd + 1)
-      .join('')
-      .split(/\s+/);
+    // Contar palavras na string da seleção
+    const selectionWordCount = (selectedText.match(/\S+/g) || []).length;
 
-    return contextWords;
+    // A. Início do contexto
+    const contextStartIndex = Math.max(0, startWordIndex - CONTEXT_WORD_COUNT);
+
+    // B. Fim da seleção
+    const selectionEndIndex = Math.min(
+      wordsInDoc.length - 1,
+      startWordIndex + selectionWordCount - 1
+    );
+
+    // C. Fim do contexto
+    const contextEndIndex = Math.min(
+      wordsInDoc.length - 1,
+      selectionEndIndex + CONTEXT_WORD_COUNT
+    );
+
+    // --- 5. Extrair a fatia final do texto original ---
+    // Pega a posição em CARACTERES da primeira e da última palavra do bloco de contexto
+    const finalStartChar = wordsInDoc[contextStartIndex].start;
+    const finalEndChar = wordsInDoc[contextEndIndex].end;
+
+    return fullText.substring(finalStartChar, finalEndChar);
   };
 
   const handleMouseUp = () => {
