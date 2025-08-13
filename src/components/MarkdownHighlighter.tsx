@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Paper,
   Stack,
@@ -17,16 +17,19 @@ import CloseIcon from '@mui/icons-material/Close';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { useLabelExampleContext } from '@hooks/useLabelExample';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 
 interface MarkdownHighlighterProps {
   nameFile: string;
   markdownContent: string;
-  highlightRegex?: string | null;
+  highlightRegex?: string | RegExp | null;
 }
 
-const CONTEXT_WORDS_TOTAL = 20; // N = 6 (exemplo: 3 antes + 3 depois)
+const mapRegexBackendToFrontend = (regexString: string): string => {
+  return regexString.replace(/\\Z/g, '$');
+};
 
 export const MarkdownHighlighter = ({
   nameFile,
@@ -42,90 +45,31 @@ export const MarkdownHighlighter = ({
 
   const { addOrUpdateLabel } = useLabelExampleContext();
 
-  const fullTextRef = useRef(markdownContent); // Referência para o texto total
+  const fullTextRef = useRef(markdownContent);
 
   const handleOpenFullscreen = () => setOpenFullscreen(true);
   const handleCloseFullscreen = () => setOpenFullscreen(false);
 
-  const getContextWords = (
-    fullText: string,
-    selectedText: string
-  ): string => {
-    if (!fullText || !selectedText) {
-      return "";
-    }
+  const highlightedMarkdown = useMemo(() => {
+    if (!markdownContent || !highlightRegex) return markdownContent || '';
 
-    // --- 1. Encontrar um ponto de partida confiável (mesma lógica de antes) ---
-    const searchSnippet = selectedText.substring(0, 70);
-    const normalizedSnippet = searchSnippet.replace(/\s+/g, " ").trim();
-    const escapedSnippet = normalizedSnippet.replace(
-      /[.*+?^${}()|[\]\\]/g,
-      "\\$&"
-    );
-    const searchPattern = new RegExp(escapedSnippet.replace(/\s+/g, "\\s+"));
-    const startIndex = fullText.search(searchPattern);
+    try {
+      const regex =
+        typeof highlightRegex === 'string'
+          ? new RegExp(mapRegexBackendToFrontend(highlightRegex), 'g')
+          : highlightRegex;
 
-    if (startIndex === -1) {
-      return selectedText; // Retorna a seleção se não encontrar o início
-    }
-
-    // --- 2. Criar um mapa de "palavras" do documento inteiro ---
-    // Esta é a mudança crucial: usamos uma definição consistente de palavra.
-    const wordsInDoc = [];
-    // A regex /\S+/g encontra sequências de caracteres que não são espaços.
-    // A flag 'd' (disponível em engines JS modernas) nos dá os índices de início/fim.
-    const wordRegex = /\S+/gd; 
-    let match;
-    while ((match = wordRegex.exec(fullText)) !== null) {
-      wordsInDoc.push({
-        text: match[0],
-        start: match.indices[0][0],
-        end: match.indices[0][1],
+      return markdownContent.replace(regex, (match) => {
+        console.log(match);
+        const paragraphs = match.split(/\n\s*\n/);
+        return paragraphs
+          .map((p) => `<mark class="custom-highlight">${p}</mark>`)
+          .join('\n\n');
       });
+    } catch {
+      return markdownContent;
     }
-
-    // --- 3. Encontrar o índice da palavra onde a seleção começa ---
-    let startWordIndex = -1;
-    for (let i = 0; i < wordsInDoc.length; i++) {
-      // Se o caractere inicial da busca está dentro desta palavra
-      if (wordsInDoc[i].start <= startIndex && startIndex < wordsInDoc[i].end) {
-        startWordIndex = i;
-        break;
-      }
-    }
-
-    if (startWordIndex === -1) {
-      return selectedText; // Fallback de segurança
-    }
-
-    // --- 4. Calcular os índices do contexto usando simples aritmética ---
-    const CONTEXT_WORD_COUNT = 20;
-
-    // Contar palavras na string da seleção
-    const selectionWordCount = (selectedText.match(/\S+/g) || []).length;
-
-    // A. Início do contexto
-    const contextStartIndex = Math.max(0, startWordIndex - CONTEXT_WORD_COUNT);
-
-    // B. Fim da seleção
-    const selectionEndIndex = Math.min(
-      wordsInDoc.length - 1,
-      startWordIndex + selectionWordCount - 1
-    );
-
-    // C. Fim do contexto
-    const contextEndIndex = Math.min(
-      wordsInDoc.length - 1,
-      selectionEndIndex + CONTEXT_WORD_COUNT
-    );
-
-    // --- 5. Extrair a fatia final do texto original ---
-    // Pega a posição em CARACTERES da primeira e da última palavra do bloco de contexto
-    const finalStartChar = wordsInDoc[contextStartIndex].start;
-    const finalEndChar = wordsInDoc[contextEndIndex].end;
-
-    return fullText.substring(finalStartChar, finalEndChar);
-  };
+  }, [markdownContent, highlightRegex]);
 
   const handleMouseUp = () => {
     const selectedText = window.getSelection()?.toString().trim() ?? '';
@@ -147,11 +91,7 @@ export const MarkdownHighlighter = ({
 
   const handleConfirm = () => {
     if (labelInput.trim() && exampleInput.trim()) {
-      const context = getContextWords(
-        fullTextRef.current,
-        selection,
-        CONTEXT_WORDS_TOTAL
-      );
+      const context = getContextWords(fullTextRef.current, selection);
       addOrUpdateLabel(labelInput.trim(), {
         values: exampleInput.trim(),
         context,
@@ -160,49 +100,89 @@ export const MarkdownHighlighter = ({
     }
   };
 
-  // Regex para highlight
-  let regex: RegExp | null = null;
-  try {
-    if (highlightRegex) regex = new RegExp(highlightRegex, 'gi');
-  } catch {
-    regex = null;
-  }
+  const getContextWords = (fullText: string, selectedText: string): string => {
+    if (!fullText || !selectedText) {
+      return '';
+    }
 
-  // Função para quebrar texto em partes e destacar matches
-  const renderTextWithHighlight = (text: string) => {
-    if (!regex) return text;
+    const searchSnippet = selectedText.substring(0, 70);
+    const normalizedSnippet = searchSnippet.replace(/\s+/g, ' ').trim();
+    const escapedSnippet = normalizedSnippet.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      '\\$&'
+    );
+    const searchPattern = new RegExp(escapedSnippet.replace(/\s+/g, '\\s+'));
+    const startIndex = fullText.search(searchPattern);
 
-    const parts = [];
-    let lastIndex = 0;
+    if (startIndex === -1) {
+      return selectedText;
+    }
+
+    const wordsInDoc = [];
+    const wordRegex = /\S+/dg;
     let match;
+    while ((match = wordRegex.exec(fullText)) !== null) {
+      wordsInDoc.push({
+        text: match[0],
+        start: match.indices[0][0],
+        end: match.indices[0][1],
+      });
+    }
 
-    while ((match = regex.exec(text)) !== null) {
-      const start = match.index;
-      const end = regex.lastIndex;
-
-      if (start > lastIndex) {
-        parts.push(text.substring(lastIndex, start));
-      }
-
-      parts.push(
-        <mark key={start} style={{ backgroundColor: 'yellow' }}>
-          {text.substring(start, end)}
-        </mark>
-      );
-
-      lastIndex = end;
-      if (start === end) {
-        regex.lastIndex++;
+    let startWordIndex = -1;
+    for (let i = 0; i < wordsInDoc.length; i++) {
+      if (wordsInDoc[i].start <= startIndex && startIndex < wordsInDoc[i].end) {
+        startWordIndex = i;
+        break;
       }
     }
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
+
+    if (startWordIndex === -1) {
+      return selectedText;
     }
-    return parts;
+
+    const CONTEXT_WORD_COUNT = 20;
+    const selectionWordCount = (selectedText.match(/\S+/g) || []).length;
+    const contextStartIndex = Math.max(0, startWordIndex - CONTEXT_WORD_COUNT);
+    const selectionEndIndex = Math.min(
+      wordsInDoc.length - 1,
+      startWordIndex + selectionWordCount - 1
+    );
+    const contextEndIndex = Math.min(
+      wordsInDoc.length - 1,
+      selectionEndIndex + CONTEXT_WORD_COUNT
+    );
+
+    const finalStartChar = wordsInDoc[contextStartIndex].start;
+    const finalEndChar = wordsInDoc[contextEndIndex].end;
+
+    return fullText.substring(finalStartChar, finalEndChar);
   };
 
-  // Custom components para markdown
   const components: Components = {
+    mark: ({ node, children, ...props }) => {
+      const classNames = node.properties?.className || [];
+      const isEven = classNames.includes('custom-highlight-even');
+      const isOdd = classNames.includes('custom-highlight-odd');
+
+      let style: React.CSSProperties = {
+        padding: '0.1em 0.2em',
+        borderRadius: '3px',
+        color: 'black',
+      };
+
+      if (isEven) {
+        style.backgroundColor = '#ffff99';
+      } else if (isOdd) {
+        style.backgroundColor = '#99ffcc';
+      }
+
+      return (
+        <mark style={style} {...props}>
+          {children}
+        </mark>
+      );
+    },
     h1: ({ node, ...props }) => (
       <>
         <Typography
@@ -218,20 +198,15 @@ export const MarkdownHighlighter = ({
         <Divider sx={{ mb: 2 }} />
       </>
     ),
-    p: ({ node, children, ...props }) => {
-      const text = React.Children.toArray(children)
-        .map((c) => (typeof c === 'string' ? c : ''))
-        .join('');
-      return (
-        <Typography
-          variant="body1"
-          sx={{ fontFamily: 'Roboto, sans-serif', mb: 1 }}
-          {...props}
-        >
-          {renderTextWithHighlight(text)}
-        </Typography>
-      );
-    },
+    p: ({ node, children, ...props }) => (
+      <Typography
+        variant="body1"
+        sx={{ fontFamily: 'Roboto, sans-serif', mb: 1 }}
+        {...props}
+      >
+        {children}
+      </Typography>
+    ),
     table: ({ node, ...props }) => (
       <Box sx={{ overflowX: 'auto', width: '100%', display: 'block' }}>
         <Paper
@@ -328,9 +303,9 @@ export const MarkdownHighlighter = ({
               <ReactMarkdown
                 components={components}
                 remarkPlugins={[remarkGfm]}
-              >
-                {markdownContent}
-              </ReactMarkdown>
+                rehypePlugins={[rehypeRaw]}
+                children={highlightedMarkdown}
+              />
             ) : (
               <Typography
                 variant="body2"
@@ -436,9 +411,9 @@ export const MarkdownHighlighter = ({
               <ReactMarkdown
                 components={components}
                 remarkPlugins={[remarkGfm]}
-              >
-                {markdownContent}
-              </ReactMarkdown>
+                rehypePlugins={[rehypeRaw]}
+                children={highlightedMarkdown}
+              />
             ) : (
               <Typography
                 variant="body2"

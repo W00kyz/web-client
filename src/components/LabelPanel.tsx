@@ -155,6 +155,7 @@ export const LabelPanel = ({
   };
 
   const handleRemoveLabel = (labelKey: string) => {
+    onNewRegex(''); // Limpa o regex ao remover o rótulo
     setTimeout(() => {
       removeLabel(labelKey);
     }, 300);
@@ -167,7 +168,6 @@ export const LabelPanel = ({
   ) => {
     setCurrentSendingLabel(labelKey);
 
-    // Montar o objeto conforme o formato solicitado
     const formattedData = {
       documentId: 1,
       isSection: isSection ?? false,

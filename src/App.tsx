@@ -15,13 +15,18 @@ import { ptBR as datePtBR } from '@mui/x-date-pickers/locales';
 import { ptBR as gridPtBr } from '@mui/x-data-grid/locales';
 
 const NAVIGATION: Navigation = [
-  { title: 'Home' },
+  { title: 'Início' },
   {
     title: 'Templates',
     segment: 'templates',
     pattern: 'templates{/:templateId}*',
   },
+  {
+    title: 'Extração',
+    segment: 'extraction',
+  },
 ];
+
 const BRANDING = { title: 'VeraAI', logo: '' };
 
 const primaryColor = '#6750A4';
