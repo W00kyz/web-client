@@ -27,7 +27,10 @@ const NAVIGATION: Navigation = [
   },
 ];
 
-const BRANDING = { title: 'VeraAI', logo: '' };
+const BRANDING = {
+  title: 'VeraAI',
+  logo: <img src="src/assets/images/logo.png" />,
+};
 
 const primaryColor = '#6750A4';
 
