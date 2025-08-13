@@ -13,6 +13,7 @@ import {
 } from '../src/auth/auth';
 import { ptBR as datePtBR } from '@mui/x-date-pickers/locales';
 import { ptBR as gridPtBr } from '@mui/x-data-grid/locales';
+import logo from '@assets/images/logo_complete.png';
 
 const NAVIGATION: Navigation = [
   { title: 'Início' },
@@ -29,7 +30,7 @@ const NAVIGATION: Navigation = [
 
 const BRANDING = {
   title: '',
-  logo: <img src="src/assets/images/logo_complete.png" />,
+  logo: <img src={logo} />,
 };
 
 const primaryColor = '#6750A4';
