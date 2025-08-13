@@ -11,6 +11,7 @@ import {
 import { FileUpload } from '@components/FileUpload';
 import { useMutation } from '@hooks/useMutation';
 import { API_URL } from '@constants/AppContants';
+import imgPdf from '@assets/images/ImgPdf.png';
 
 async function sendExtractionRequest(args: {
   template: string;
@@ -71,7 +72,7 @@ export const ExtractionPage = () => {
           width: '100%',
           maxWidth: 500,
           textAlign: 'center',
-          mb:10
+          mb: 10,
         }}
       >
         <Box
@@ -85,7 +86,7 @@ export const ExtractionPage = () => {
           }}
         >
           <img
-            src="src/assets/images/ImgPdf.png"
+            src={imgPdf}
             alt="Upload Pdf Image"
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
@@ -129,7 +130,7 @@ export const ExtractionPage = () => {
             backgroundColor: '#fff',
             borderRadius: 1,
             height: 48,
-            mb: 5, 
+            mb: 5,
           }}
         >
           <MenuItem value="" disabled>
