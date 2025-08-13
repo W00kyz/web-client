@@ -9,17 +9,19 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
     "baseUrl": "./src",
     "paths": {
       "@/*": ["src/*"],
-      "@datasources/*": ["data/*"],
+      "@datasources/*": ["datasources/*"],
       "@layouts/*": ["layouts/*"],
       "@hooks/*": ["hooks/*"],
       "@utils/*": ["utils/*"],
       "@pages/*": ["pages/*"],
       "@components/*": ["components/*"],
       "@assets/*": ["assets/*"],
-      "@constants/*": ["@constants/*"]
+      "@constants/*": ["constants/*"],
+      "@types/*": ["@types/*"]
     }
   },
   "include": ["src", "vite-env.d.ts"],

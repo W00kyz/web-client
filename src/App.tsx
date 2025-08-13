@@ -4,7 +4,6 @@ import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import type { Authentication, Navigation } from '@toolpad/core/AppProvider';
 import SessionContext, { Session } from './hooks/useSession';
 import ptBr from './locales/ptbr';
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import { createTheme } from '@mui/material';
 import type { User } from 'firebase/auth';
 import {
@@ -16,25 +15,63 @@ import { ptBR as datePtBR } from '@mui/x-date-pickers/locales';
 import { ptBR as gridPtBr } from '@mui/x-data-grid/locales';
 
 const NAVIGATION: Navigation = [
-  { kind: 'header', title: 'Main items' },
-  { title: 'Conformidade', icon: <AssignmentIcon /> },
+  { title: 'Home' },
+  {
+    title: 'Templates',
+    segment: 'templates',
+    pattern: 'templates{/:templateId}*',
+  },
 ];
 const BRANDING = { title: 'VeraAI', logo: '' };
 
-const lightAppBarColor = '#0D2B70';
-const darkAppBarColor = '#0D2B70';
+const primaryColor = '#6750A4';
 
 const lightTheme = createTheme(
   {
     palette: {
+      DataGrid: {
+        bg: '#FFFFFF',
+      },
       mode: 'light',
+      primary: {
+        main: primaryColor,
+        contrastText: '#fff',
+      },
+      background: { default: '#F5F5FA' },
     },
     components: {
       MuiAppBar: {
         defaultProps: { color: 'primary', enableColorOnDark: true },
         styleOverrides: {
           root: {
-            backgroundColor: lightAppBarColor,
+            backgroundColor: '#fff', // ← USA O ROXO
+            color: primaryColor,
+            '& .MuiTypography-root, & svg': {
+              color: primaryColor,
+            },
+          },
+        },
+      },
+    },
+  },
+  datePtBR,
+  gridPtBr
+);
+
+const darkTheme = createTheme(
+  {
+    palette: {
+      mode: 'dark',
+      primary: {
+        main: primaryColor, // ← COR PRIMÁRIA ROXA
+        contrastText: '#fff',
+      },
+    },
+    components: {
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backgroundColor: primaryColor, // ← USA O ROXO
             color: '#fff',
             '& .MuiTypography-root, & svg': {
               color: '#fff',
@@ -47,28 +84,6 @@ const lightTheme = createTheme(
   datePtBR,
   gridPtBr
 );
-
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-  },
-  components: {
-    MuiAppBar: {
-      styleOverrides: {
-        colorPrimary: {
-          color: '#ffffff',
-        },
-        root: {
-          backgroundColor: darkAppBarColor,
-          color: '#fff',
-          '& .MuiTypography-root, & svg': {
-            color: '#fff',
-          },
-        },
-      },
-    },
-  },
-});
 
 const AUTHENTICATION: Authentication = {
   signIn: signInWithGoogle,

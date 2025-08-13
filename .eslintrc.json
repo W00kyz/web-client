@@ -3,15 +3,22 @@
   "parserOptions": {
     "ecmaVersion": 2020,
     "sourceType": "module",
-    "ecmaFeatures": { "jsx": true }
+    "ecmaFeatures": {
+      "jsx": true
+    }
   },
-  "plugins": ["@typescript-eslint", "react", "prettier"],
+  "plugins": [
+    "@typescript-eslint",
+    "react",
+    "prettier"
+  ],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react/recommended",
     "plugin:prettier/recommended",
-    "prettier"
+    "prettier",
+    "plugin:storybook/recommended"
   ],
   "rules": {
     "prettier/prettier": "error",

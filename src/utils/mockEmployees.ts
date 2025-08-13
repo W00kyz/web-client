@@ -1,4 +1,4 @@
-import { Report } from '@datasources/report';
+import { Report } from 'datasources/report';
 
 export const mockReport: Report[] = Array.from({ length: 60 }, (_, i) => ({
   id: i + 1,
