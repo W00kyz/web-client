@@ -17,6 +17,7 @@ import { useMutation } from '@hooks/useMutation';
 import { MarkdownHighlighter } from '@components/MarkdownHighlighter';
 import { LabelPanel } from '@components/LabelPanel';
 import { useSession } from '@hooks/useSession';
+import { FileUpload } from '@components/FileUpload';
 
 export const CreateTemplate = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -41,12 +42,11 @@ export const CreateTemplate = () => {
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-      setUploadedMd('');
-      setRegex(null); // reset regex ao mudar arquivo
-    }
+  // Aqui: handleFileChange recebe arquivo direto
+  const handleFileChange = (file: File | null) => {
+    setFile(file);
+    setUploadedMd('');
+    setRegex(null);
   };
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export const CreateTemplate = () => {
       <LabelExampleProvider>
         <Stack spacing={2}>
           <Stepper activeStep={activeStep} alternativeLabel>
-            {['Informar dados do Template', 'Definir Rótulo'].map((label) => (
+            {['Informar dados do Template', 'Definir Rótulos'].map((label) => (
               <Step key={label}>
                 <StepLabel>{label}</StepLabel>
               </Step>
@@ -76,11 +76,7 @@ export const CreateTemplate = () => {
                 fullWidth
                 disabled={isLoading}
               />
-              <input
-                type="file"
-                onChange={handleFileChange}
-                disabled={isLoading}
-              />
+              <FileUpload file={file} onChange={handleFileChange} />
               {isLoading && (
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <CircularProgress size={24} />
@@ -118,9 +114,17 @@ export const CreateTemplate = () => {
                     markdownContent={uploadedMd}
                     highlightRegex={regex}
                   />
-                  <Button onClick={handleBack} sx={{ mt: 1 }}>
-                    Voltar
-                  </Button>
+                  <Stack
+                    direction={'row'}
+                    justifyContent={'center'}
+                    spacing={2}
+                    my={1}
+                  >
+                    <Button onClick={handleBack} variant="outlined">
+                      Voltar
+                    </Button>
+                    <Button variant="contained">Salvar</Button>
+                  </Stack>
                 </Stack>
                 <LabelPanel
                   templateName={templateName}
