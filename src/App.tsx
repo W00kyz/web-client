@@ -28,8 +28,8 @@ const NAVIGATION: Navigation = [
 ];
 
 const BRANDING = {
-  title: 'VeraAI',
-  logo: <img src="src/assets/images/logo.png" />,
+  title: '',
+  logo: <img src="src/assets/images/logo_complete.png" />,
 };
 
 const primaryColor = '#6750A4';
