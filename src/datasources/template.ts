@@ -31,7 +31,7 @@ export const templateRuleDataSource = {
   }): Promise<CreatedRule> => {
     try {
       console.log(data);
-      const response = await fetch(`${API_URL}/document/generate-regex`, {
+      const response = await fetch(`${API_URL}/document/generate-pattern`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
