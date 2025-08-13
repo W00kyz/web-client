@@ -6,15 +6,11 @@ import {
   Typography,
   MenuItem,
   Button,
+  Box,
 } from '@mui/material';
 import { FileUpload } from '@components/FileUpload';
 import { useMutation } from '@hooks/useMutation';
 import { API_URL } from '@constants/AppContants';
-import { MarkdownModal } from '@components/MarkdownModal';
-
-interface ExtractionResponse {
-  message: string;
-}
 
 async function sendExtractionRequest(args: {
   template: string;
@@ -70,52 +66,95 @@ export const ExtractionPage = () => {
       }}
     >
       <Stack
-        spacing={2}
         alignItems="center"
-        sx={{ width: '100%', maxWidth: 400 }}
+        sx={{
+          width: '100%',
+          maxWidth: 500,
+          textAlign: 'center',
+          mb:10
+        }}
       >
-        <div
-          style={{
-            width: 300,
-            height: 200, // altura fixa que vai cortar o excesso
-            overflow: 'hidden',
-            borderRadius: 6, // opcional, bordas arredondadas
+        <Box
+          sx={{
+            width: 263,
+            height: 263,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: 0.5,
           }}
         >
           <img
             src="src/assets/images/ImgPdf.png"
             alt="Upload Pdf Image"
-            style={{
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
+        </Box>
+
+        <Typography
+          variant="h4"
+          fontWeight={700}
+          sx={{ color: '#000', fontSize: '1.8rem', mb: 1 }}
+        >
+          Selecione o documento
+        </Typography>
+
+        <Typography
+          variant="body1"
+          sx={{ color: '#555', maxWidth: 350, mb: 3 }}
+        >
+          Selecione o documento a ser processado e seu respectivo template.
+        </Typography>
+
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <FileUpload
+            file={selectedFile}
+            onChange={setSelectedFile}
+            sx={{
               width: '100%',
-              height: '100%',
-              objectFit: 'cover', // crop automático
-              objectPosition: 'center center', // centraliza o foco do crop
+              height: 49,
+              backgroundColor: '#fff',
+              borderRadius: 1,
+              border: '1px solid #ccc',
             }}
           />
-        </div>
-        <Typography variant="h3" textAlign="center">
-          Selecione o Documento
-        </Typography>
-        <Typography variant="subtitle1" textAlign="center">
-          Selecione o documento e o template
-        </Typography>
+        </Box>
 
         <Select
           fullWidth
           value={selectedTemplate}
+          displayEmpty
           onChange={(e) => setSelectedTemplate(e.target.value)}
+          sx={{
+            backgroundColor: '#fff',
+            borderRadius: 1,
+            height: 48,
+            mb: 5, 
+          }}
         >
+          <MenuItem value="" disabled>
+            Selecionar template
+          </MenuItem>
           <MenuItem value="template1">Template 1</MenuItem>
           <MenuItem value="template2">Template 2</MenuItem>
         </Select>
 
-        <FileUpload file={selectedFile} onChange={setSelectedFile} />
-
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={!selectedTemplate || !selectedFile}
-          loading={isLoading}
+          disabled={!selectedTemplate || !selectedFile || isLoading}
+          sx={{
+            width: '40%',
+            height: 60,
+            backgroundColor: '#7B57C2',
+            fontWeight: 600,
+            fontSize: '1rem',
+            borderRadius: 1,
+            boxShadow: '0px 4px 4px rgba(0,0,0,0.25)',
+            '&:hover': {
+              backgroundColor: '#6B47B2',
+            },
+          }}
         >
           Enviar
         </Button>
