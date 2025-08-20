@@ -7,7 +7,7 @@ export interface Selection {
 
 export interface CreateRuleInput {
   documentId: number;
-  selections: Selection[];
+  selections: string[];
   isSection?: boolean;
 }
 

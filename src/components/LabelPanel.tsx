@@ -17,7 +17,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TransitionGroup } from 'react-transition-group';
-import { useLabelExampleContext, ExampleItem } from '@hooks/useLabelExample';
 import { useMutation } from '@hooks/useMutation';
 import {
   CreatedRule,
@@ -26,6 +25,7 @@ import {
 } from '@datasources/template';
 import InfoIcon from '@mui/icons-material/Info';
 import { useSession } from '@hooks/useSession';
+import { ExampleItem, useLabelExampleContext } from '@hooks/useLabelExample';
 
 interface LabelCardProps {
   title: string;
@@ -56,7 +56,7 @@ const LabelCard = ({
     <Stack padding={1}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography fontFamily={"'Roboto', sans-serif"}>{title}</Typography>
+          <Typography>{title}</Typography>
           {isSection && (
             <Chip
               label="Seção"
@@ -81,24 +81,22 @@ const LabelCard = ({
           <TransitionGroup>
             {examples.map((example, idx) => (
               <Collapse key={idx} timeout={300}>
-                <Stack direction="column" spacing={0.5} sx={{ mb: 1 }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      value={example.values}
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      slotProps={{ input: { readOnly: true } }}
-                    />
-                    <IconButton
-                      size="small"
-                      color="inherit"
-                      onClick={() => onRemoveExample?.(idx)}
-                      disabled={loading}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TextField
+                    value={example}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    slotProps={{ input: { readOnly: true } }}
+                  />
+                  <IconButton
+                    size="small"
+                    color="inherit"
+                    onClick={() => onRemoveExample?.(idx)}
+                    disabled={loading}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
                 </Stack>
               </Collapse>
             ))}
@@ -150,15 +148,12 @@ export const LabelPanel = ({
     string | null
   >(null);
 
-  const handleRemoveExample = (labelKey: string, idx: number) => {
+  const handleRemoveExample = (labelKey: string, idx: number) =>
     removeExample(labelKey, idx);
-  };
 
   const handleRemoveLabel = (labelKey: string) => {
-    onNewRegex(''); // Limpa o regex ao remover o rótulo
-    setTimeout(() => {
-      removeLabel(labelKey);
-    }, 300);
+    onNewRegex('');
+    setTimeout(() => removeLabel(labelKey), 300);
   };
 
   const handleSendClick = async (
@@ -172,24 +167,16 @@ export const LabelPanel = ({
       documentId: 1,
       isSection: isSection ?? false,
       key: labelKey,
-      selections: examples.map((ex) => ({
-        values: ex.values,
-        context: ex.context,
-      })),
+      selections: examples, // array de strings
     };
 
     await mutate(
-      {
-        data: formattedData,
-        token: session?.user.token,
-      },
+      { data: formattedData, token: session?.user.token },
       {
         onError: () => setCurrentSendingLabel(null),
         onSuccess: (data) => {
           setCurrentSendingLabel(null);
-          if (data?.pattern) {
-            onNewRegex(data.pattern);
-          }
+          if (data?.pattern) onNewRegex(data.pattern);
         },
       }
     );
@@ -214,11 +201,6 @@ export const LabelPanel = ({
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
             placeholder="Digite o nome do template"
-            sx={{
-              fontFamily: "'Roboto', sans-serif",
-              fontSize: '1.25rem',
-              fontWeight: 500,
-            }}
             fullWidth
           />
         </Stack>
