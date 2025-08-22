@@ -14,16 +14,16 @@ import { PageContainer } from '@toolpad/core';
 
 import { fileUploadDataSource } from '@datasources/upload';
 import { useMutation } from '@hooks/useMutation';
-import { MarkdownHighlighter } from '@components/MarkdownHighlighter';
 import { LabelPanel } from '@components/LabelPanel';
 import { useSession } from '@hooks/useSession';
 import { FileUpload } from '@components/FileUpload';
+import { HtmlHighlighter } from '@components/MarkdownHighlighter';
 
 export const CreateTemplate = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [templateName, setTemplateName] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [uploadedMd, setUploadedMd] = useState<string>('');
+  const [uploadedHtml, setUploadedHtml] = useState<string>(''); // 🔹 trocado
   const [regex, setRegex] = useState<string | null>(null);
   const { session } = useSession();
 
@@ -31,7 +31,8 @@ export const CreateTemplate = () => {
     fileUploadDataSource.uploadFile,
     {
       onSuccess: (data) => {
-        setUploadedMd(data.document_md);
+        // 🔹 ajusta para o campo que o backend retorna em HTML
+        setUploadedHtml(data.document_md);
       },
       onError: (error) => {
         alert('Erro no upload: ' + error.message);
@@ -42,10 +43,9 @@ export const CreateTemplate = () => {
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
 
-  // Aqui: handleFileChange recebe arquivo direto
   const handleFileChange = (file: File | null) => {
     setFile(file);
-    setUploadedMd('');
+    setUploadedHtml('');
     setRegex(null);
   };
 
@@ -85,7 +85,9 @@ export const CreateTemplate = () => {
               )}
               <Stack direction="row" spacing={1}>
                 <Button
-                  disabled={!templateName || !file || isLoading || !uploadedMd}
+                  disabled={
+                    !templateName || !file || isLoading || !uploadedHtml
+                  } // 🔹 atualizado
                   variant="contained"
                   onClick={handleNext}
                 >
@@ -109,9 +111,9 @@ export const CreateTemplate = () => {
                 sx={{ mt: 2 }}
               >
                 <Stack>
-                  <MarkdownHighlighter
+                  <HtmlHighlighter
                     nameFile={file?.name ?? ''}
-                    markdownContent={uploadedMd}
+                    htmlContent={uploadedHtml} // 🔹 atualizado
                     highlightRegex={regex}
                   />
                   <Stack

@@ -1,4 +1,4 @@
-// MarkdownHighlighter.tsx
+// HtmlHighlighter.tsx
 import React, { useState, useRef, useMemo } from 'react';
 import {
   Paper,
@@ -16,15 +16,12 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import ReactMarkdown, { Components } from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutlined';
 import { useLabelExampleContext } from '@hooks/useLabelExample';
 
-interface MarkdownHighlighterProps {
+interface HtmlHighlighterProps {
   nameFile: string;
-  markdownContent: string;
+  htmlContent: string;
   highlightRegex?: string | RegExp | null;
 }
 
@@ -32,26 +29,26 @@ const mapRegexBackendToFrontend = (regexString: string): string => {
   return regexString.replace(/\\Z/g, '$');
 };
 
-export const MarkdownHighlighter = ({
+export const HtmlHighlighter = ({
   nameFile,
-  markdownContent,
+  htmlContent,
   highlightRegex,
-}: MarkdownHighlighterProps) => {
+}: HtmlHighlighterProps) => {
   const { addOrUpdateLabel } = useLabelExampleContext();
 
   const [openFullscreen, setOpenFullscreen] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [labelInput, setLabelInput] = useState('');
   const [exampleInput, setExampleInput] = useState('');
-  const fullTextRef = useRef(markdownContent);
+  const fullTextRef = useRef(htmlContent);
 
-  const hasContent = markdownContent?.trim().length > 0;
+  const hasContent = htmlContent?.trim().length > 0;
 
   const handleOpenFullscreen = () => setOpenFullscreen(true);
   const handleCloseFullscreen = () => setOpenFullscreen(false);
 
-  const highlightedMarkdown = useMemo(() => {
-    if (!markdownContent || !highlightRegex) return markdownContent || '';
+  const highlightedHtml = useMemo(() => {
+    if (!htmlContent || !highlightRegex) return htmlContent || '';
 
     try {
       const regex =
@@ -59,30 +56,36 @@ export const MarkdownHighlighter = ({
           ? new RegExp(mapRegexBackendToFrontend(highlightRegex), 'g')
           : highlightRegex;
 
-      return markdownContent.replace(regex, (match) => {
-        const paragraphs = match.split(/\n\s*\n/);
-        return paragraphs
-          .map((p) => `<mark class="custom-highlight">${p}</mark>`)
-          .join('\n\n');
+      return htmlContent.replace(regex, (match) => {
+        return `<mark class="custom-highlight">${match}</mark>`;
       });
     } catch {
-      return markdownContent;
+      return htmlContent;
     }
-  }, [markdownContent, highlightRegex]);
+  }, [htmlContent, highlightRegex]);
 
+  // 🔹 captura HTML selecionado
   const handleMouseUp = () => {
-    const selectedText = window.getSelection()?.toString().trim() ?? '';
-    if (selectedText.length > 0) {
-      setExampleInput(selectedText);
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+
+    // cria div temporária com o HTML da seleção
+    const div = document.createElement('div');
+    div.appendChild(range.cloneContents());
+    const selectedHtml = div.innerHTML.trim();
+
+    if (selectedHtml.length > 0) {
+      setExampleInput(selectedHtml); // agora salva o HTML, não só o texto
       setLabelInput('');
-      fullTextRef.current = markdownContent;
+      fullTextRef.current = htmlContent;
       setOpenModal(true);
     }
   };
 
   const handleModalClose = () => {
     setOpenModal(false);
-    setSelection('');
     setLabelInput('');
     setExampleInput('');
   };
@@ -92,53 +95,6 @@ export const MarkdownHighlighter = ({
       addOrUpdateLabel(labelInput.trim(), exampleInput.trim());
       handleModalClose();
     }
-  };
-
-  const components: Components = {
-    mark: ({ node, children, ...props }) => {
-      const style: React.CSSProperties = {
-        padding: '0.1em 0.2em',
-        borderRadius: '3px',
-        color: 'black',
-        backgroundColor: '#ffff99',
-      };
-      return (
-        <mark style={style} {...props}>
-          {children}
-        </mark>
-      );
-    },
-    h1: ({ node, ...props }) => (
-      <>
-        <Typography variant="h4" sx={{ mt: 2, mb: 1 }} {...props} />
-        <Divider sx={{ mb: 2 }} />
-      </>
-    ),
-    p: ({ node, children, ...props }) => (
-      <Typography variant="body1" sx={{ mb: 1 }} {...props}>
-        {children}
-      </Typography>
-    ),
-    table: ({ node, ...props }) => (
-      <Box sx={{ overflowX: 'auto', width: '100%', display: 'block' }}>
-        <Paper
-          variant="outlined"
-          sx={{ my: 2, borderRadius: 1, width: '100%', display: 'block' }}
-        >
-          <table {...props} />
-        </Paper>
-      </Box>
-    ),
-    thead: ({ node, ...props }) => <thead {...props} />,
-    tbody: ({ node, ...props }) => <tbody {...props} />,
-    tr: ({ node, ...props }) => <tr {...props} />,
-    th: ({ node, ...props }) => (
-      <th
-        style={{ fontWeight: 'bold', backgroundColor: '#f5f5f5' }}
-        {...props}
-      />
-    ),
-    td: ({ node, ...props }) => <td {...props} />,
   };
 
   return (
@@ -166,7 +122,7 @@ export const MarkdownHighlighter = ({
           <Stack direction={'row'} spacing={1} mx={2} alignItems={'center'}>
             <InfoOutlineIcon />
             <Typography variant="subtitle1">
-              Selecione um parte de texto abaixo para criar um rótulo com
+              Selecione uma parte de texto abaixo para criar um rótulo com
               exemplo.
             </Typography>
           </Stack>
@@ -184,20 +140,14 @@ export const MarkdownHighlighter = ({
               cursor: 'text',
               userSelect: 'text',
             }}
-          >
-            {hasContent ? (
-              <ReactMarkdown
-                components={components}
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-                children={highlightedMarkdown}
-              />
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                Não foi possível obter o conteúdo.
-              </Typography>
-            )}
-          </Box>
+            dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          />
+
+          {!hasContent && (
+            <Typography variant="body2" color="text.secondary">
+              Não foi possível obter o conteúdo.
+            </Typography>
+          )}
         </Stack>
       </Paper>
 
@@ -229,10 +179,12 @@ export const MarkdownHighlighter = ({
               fullWidth
             />
             <TextField
-              label="Exemplo"
+              label="Exemplo (HTML selecionado)"
               value={exampleInput}
               onChange={(e) => setExampleInput(e.target.value)}
               fullWidth
+              multiline
+              minRows={3}
             />
           </Stack>
         </DialogContent>
@@ -281,20 +233,8 @@ export const MarkdownHighlighter = ({
               userSelect: 'text',
             }}
             onMouseUp={handleMouseUp}
-          >
-            {hasContent ? (
-              <ReactMarkdown
-                components={components}
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-                children={highlightedMarkdown}
-              />
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                Não foi possível obter o conteúdo.
-              </Typography>
-            )}
-          </Box>
+            dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          />
         </Stack>
       </Dialog>
     </>
