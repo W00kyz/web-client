@@ -24,7 +24,6 @@ export const CreateTemplate = () => {
   const [templateName, setTemplateName] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploadedHtml, setUploadedHtml] = useState<string>(''); // 🔹 trocado
-  const [regex, setRegex] = useState<string | null>(null);
   const { session } = useSession();
 
   const { mutate, isLoading, error } = useMutation(
@@ -46,7 +45,6 @@ export const CreateTemplate = () => {
   const handleFileChange = (file: File | null) => {
     setFile(file);
     setUploadedHtml('');
-    setRegex(null);
   };
 
   useEffect(() => {
@@ -114,7 +112,6 @@ export const CreateTemplate = () => {
                   <HtmlHighlighter
                     nameFile={file?.name ?? ''}
                     htmlContent={uploadedHtml} // 🔹 atualizado
-                    highlightRegex={regex}
                   />
                   <Stack
                     direction={'row'}
@@ -125,13 +122,14 @@ export const CreateTemplate = () => {
                     <Button onClick={handleBack} variant="outlined">
                       Voltar
                     </Button>
-                    <Button href= "/extraction" variant="contained">Salvar</Button>
+                    <Button href="/extraction" variant="contained">
+                      Salvar
+                    </Button>
                   </Stack>
                 </Stack>
                 <LabelPanel
                   templateName={templateName}
                   setTemplateName={setTemplateName}
-                  onNewRegex={(newRegex) => setRegex(newRegex)}
                 />
               </Stack>
             </Stack>

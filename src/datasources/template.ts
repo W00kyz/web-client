@@ -46,25 +46,28 @@ export const templateRuleDataSource = {
 
       const result = await response.json();
       return result as CreatedRule;
-
-      // MOCK temporário (se quiser usar, comente o fetch acima)
-      /*
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            id: 123,
-            user_id: 1,
-            document_id: data.documentId,
-            name: data.selections[0]?.key || 'mockRule',
-            is_section: data.isSection || false,
-            pattern: 'conteúdo',
-            created_at: new Date().toISOString(),
-          });
-        }, 300);
-      });
-      */
     } catch (error) {
       console.error('Erro no createOne (Rule):', error);
+      throw error;
+    }
+  },
+
+  deleteOne: async ({ id, token }: { id: number; token?: string }) => {
+    try {
+      const response = await fetch(`${API_URL}/document/delete-pattern/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao deletar regex: ${response.statusText}`);
+      }
+      return;
+    } catch (error) {
+      console.error('Erro no deleteOne (Rule):', error);
       throw error;
     }
   },
