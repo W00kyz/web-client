@@ -11,18 +11,22 @@ import {
 import { FileUpload } from '@components/FileUpload';
 import { useMutation } from '@hooks/useMutation';
 import { API_URL } from '@constants/AppContants';
+import { useSession } from '@hooks/useSession';
 import imgPdf from '@assets/images/ImgPdf.png';
 
 async function sendExtractionRequest(args: {
   template: string;
   file: File;
+  token?: string;
 }): Promise<string> {
   const formData = new FormData();
-  formData.append('template', args.template);
   formData.append('file', args.file);
 
-  const res = await fetch(`${API_URL}/extraction`, {
+  const res = await fetch(`${API_URL}/document/apply-regex/1`, {
     method: 'POST',
+    headers: {
+      Authorization: `Bearer ${args.token ?? ''}`,
+    },
     body: formData,
   });
 
@@ -36,6 +40,8 @@ async function sendExtractionRequest(args: {
 export const ExtractionPage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const { session } = useSession();
 
   const { mutate, isLoading } = useMutation(sendExtractionRequest, {
     onSuccess: (csv) => {
@@ -53,7 +59,11 @@ export const ExtractionPage = () => {
 
   const handleSubmit = () => {
     if (!selectedTemplate || !selectedFile) return;
-    mutate({ template: selectedTemplate, file: selectedFile });
+    mutate({
+      template: selectedTemplate,
+      file: selectedFile,
+      token: session?.user.token,
+    });
   };
 
   return (
@@ -136,8 +146,8 @@ export const ExtractionPage = () => {
           <MenuItem value="" disabled>
             Selecionar template
           </MenuItem>
-          <MenuItem value="template1">Template 1</MenuItem>
-          <MenuItem value="template2">Template 2</MenuItem>
+          <MenuItem value="1">Template 1</MenuItem>
+          <MenuItem value="2">Template 2</MenuItem>
         </Select>
 
         <Button
