@@ -20,9 +20,10 @@ async function sendExtractionRequest(args: {
   token?: string;
 }): Promise<string> {
   const formData = new FormData();
-  formData.append('file', args.file);
+  formData.append("template_id", args.template); 
+  formData.append("file", args.file);  
 
-  const res = await fetch(`${API_URL}/document/apply-regex/1`, {
+  const res = await fetch(`${API_URL}/document/process`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${args.token ?? ''}`,

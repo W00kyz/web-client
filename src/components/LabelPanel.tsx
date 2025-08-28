@@ -164,10 +164,10 @@ export const LabelPanel = ({
     setCurrentSendingLabel(labelKey);
 
     const formattedData = {
-      documentId: 1,
+      templateId: 1,
       isSection: isSection ?? false,
-      key: labelKey,
-      selections: examples, // array de strings
+      name: labelKey,
+      description: examples[0],
     };
 
     await mutate(

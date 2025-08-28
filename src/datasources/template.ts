@@ -6,8 +6,9 @@ export interface Selection {
 }
 
 export interface CreateRuleInput {
-  documentId: number;
-  selections: string[];
+  templateId: number;
+  name: string;
+  description: string;
   isSection?: boolean;
 }
 
@@ -30,8 +31,7 @@ export const templateRuleDataSource = {
     token?: string;
   }): Promise<CreatedRule> => {
     try {
-      console.log(data);
-      const response = await fetch(`${API_URL}/document/generate-pattern`, {
+      const response = await fetch(`${API_URL}/document/create-pattern`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

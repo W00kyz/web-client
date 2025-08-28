@@ -125,7 +125,7 @@ export const CreateTemplate = () => {
                     <Button onClick={handleBack} variant="outlined">
                       Voltar
                     </Button>
-                    <Button variant="contained">Salvar</Button>
+                    <Button href= "/extraction" variant="contained">Salvar</Button>
                   </Stack>
                 </Stack>
                 <LabelPanel

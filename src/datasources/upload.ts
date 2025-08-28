@@ -18,6 +18,19 @@ export const fileUploadDataSource = {
 
     // Para usar requisição real, descomente o código abaixo e remova o mock:
     try {
+      const response1 = await fetch(`${API_URL}/template`, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ 
+          name: "Extrato",
+          pattern_ids: []  // lista vazia se não houver padrões
+        }),
+      });
+
+
       const formData = new FormData();
       formData.append('file', file);
 
