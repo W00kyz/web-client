@@ -1,23 +1,23 @@
 // LabelPanel.tsx
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
-  Button,
-  Collapse,
-  Divider,
-  IconButton,
   Paper,
   Stack,
-  TextField,
-  Typography,
+  Divider,
   InputBase,
-  Tooltip,
+  IconButton,
+  Collapse,
   Box,
   Chip,
+  Button,
+  TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import AddIcon from '@mui/icons-material/Add';
 import InfoIcon from '@mui/icons-material/Info';
 import { TransitionGroup } from 'react-transition-group';
 import { useMutation } from '@hooks/useMutation';
@@ -28,12 +28,18 @@ import {
 } from '@datasources/template';
 import { useSession } from '@hooks/useSession';
 
-interface Label {
+export interface Label {
   name: string;
   description: string;
-  id: number; // id local
-  pattern_id?: number; // id do backend
+  id: number;
+  pattern_id?: number;
   sent?: boolean;
+}
+
+interface LabelPanelProps {
+  templateName: string;
+  setTemplateName: (name: string) => void;
+  onLabelsChange: (labels: Label[]) => void;
 }
 
 interface LabelCardProps {
@@ -59,13 +65,11 @@ const LabelCard = ({
   isSection,
   deleting,
 }: LabelCardProps) => {
-  const [expanded, setExpanded] = React.useState(!label.sent);
+  const [expanded, setExpanded] = useState(!label.sent);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (focusName) {
-      nameInputRef.current?.focus();
-    }
+    if (focusName) nameInputRef.current?.focus();
   }, [focusName]);
 
   useEffect(() => {
@@ -96,6 +100,7 @@ const LabelCard = ({
           />
           {isSection && <Chip label="Seção" size="small" color="secondary" />}
         </Stack>
+
         <Stack direction="row">
           {!label.sent && (
             <IconButton
@@ -144,20 +149,16 @@ const LabelCard = ({
   );
 };
 
-interface LabelPanelProps {
-  templateName: string;
-  setTemplateName: (name: string) => void;
-}
-
 export const LabelPanel = ({
   templateName,
   setTemplateName,
+  onLabelsChange,
 }: LabelPanelProps) => {
   const { session } = useSession();
-  const [labels, setLabels] = React.useState<Label[]>([]);
-  const [currentSendingLabel, setCurrentSendingLabel] = React.useState<
-    string | null
-  >(null);
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [currentSendingLabel, setCurrentSendingLabel] = useState<string | null>(
+    null
+  );
   const nextId = useRef(0);
 
   const { mutate, isLoading } = useMutation<
@@ -212,7 +213,7 @@ export const LabelPanel = ({
   const handleSendLabel = async (label: Label, isSection?: boolean) => {
     setCurrentSendingLabel(label.name);
 
-    const formattedData = {
+    const formattedData: CreateRuleInput = {
       templateId: 1,
       isSection: isSection ?? false,
       name: label.name,
@@ -234,6 +235,10 @@ export const LabelPanel = ({
       }
     );
   };
+
+  useEffect(() => {
+    onLabelsChange(labels);
+  }, [labels]);
 
   const hasPendingLabel = labels.some((l) => !l.sent);
 

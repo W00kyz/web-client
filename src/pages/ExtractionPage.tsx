@@ -7,9 +7,12 @@ import {
   MenuItem,
   Button,
   Box,
+  CircularProgress,
 } from '@mui/material';
 import { FileUpload } from '@components/FileUpload';
 import { useMutation } from '@hooks/useMutation';
+import { useQuery } from '@hooks/useQuery';
+import { templateDataSources, Template } from '@datasources/template';
 import { API_URL } from '@constants/AppContants';
 import { useSession } from '@hooks/useSession';
 import imgPdf from '@assets/images/ImgPdf.png';
@@ -20,8 +23,8 @@ async function sendExtractionRequest(args: {
   token?: string;
 }): Promise<string> {
   const formData = new FormData();
-  formData.append("template_id", args.template); 
-  formData.append("file", args.file);  
+  formData.append('template_id', args.template);
+  formData.append('file', args.file);
 
   const res = await fetch(`${API_URL}/document/process`, {
     method: 'POST',
@@ -41,29 +44,47 @@ async function sendExtractionRequest(args: {
 export const ExtractionPage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const { session } = useSession();
+  const token = session?.user.token;
 
-  const { mutate, isLoading } = useMutation(sendExtractionRequest, {
-    onSuccess: (csv) => {
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'resultado.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+  // Busca templates com useQuery
+  const {
+    data: templates,
+    isLoading: isTemplatesLoading,
+    isError: isTemplatesError,
+    refetch: refetchTemplates,
+  } = useQuery<Template[], Error>(
+    ['templates', token],
+    async () => {
+      if (!token) return [];
+      return templateDataSources.getMany(token);
     },
-  });
+    { enabled: !!token }
+  );
+
+  const { mutate, isLoading: isSubmitting } = useMutation(
+    sendExtractionRequest,
+    {
+      onSuccess: (csv) => {
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'resultado.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      },
+    }
+  );
 
   const handleSubmit = () => {
     if (!selectedTemplate || !selectedFile) return;
     mutate({
       template: selectedTemplate,
       file: selectedFile,
-      token: session?.user.token,
+      token: token,
     });
   };
 
@@ -132,29 +153,45 @@ export const ExtractionPage = () => {
           />
         </Box>
 
-        <Select
-          fullWidth
-          value={selectedTemplate}
-          displayEmpty
-          onChange={(e) => setSelectedTemplate(e.target.value)}
-          sx={{
-            backgroundColor: '#fff',
-            borderRadius: 1,
-            height: 48,
-            mb: 5,
-          }}
-        >
-          <MenuItem value="" disabled>
-            Selecionar template
-          </MenuItem>
-          <MenuItem value="1">Template 1</MenuItem>
-          <MenuItem value="2">Template 2</MenuItem>
-        </Select>
+        {isTemplatesLoading && <CircularProgress sx={{ mb: 2 }} />}
+
+        {isTemplatesError && (
+          <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 2 }}>
+            <Typography color="error">Erro ao carregar templates</Typography>
+            <Button onClick={refetchTemplates} variant="outlined">
+              Tentar novamente
+            </Button>
+          </Stack>
+        )}
+
+        {!isTemplatesLoading && !isTemplatesError && (
+          <Select
+            fullWidth
+            value={selectedTemplate}
+            displayEmpty
+            onChange={(e) => setSelectedTemplate(e.target.value)}
+            sx={{
+              backgroundColor: '#fff',
+              borderRadius: 1,
+              height: 48,
+              mb: 5,
+            }}
+          >
+            <MenuItem value="" disabled>
+              Selecionar template
+            </MenuItem>
+            {templates?.map((template) => (
+              <MenuItem key={template.name} value={template.name}>
+                {template.name}
+              </MenuItem>
+            ))}
+          </Select>
+        )}
 
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={!selectedTemplate || !selectedFile || isLoading}
+          disabled={!selectedTemplate || !selectedFile || isSubmitting}
           sx={{
             width: '40%',
             height: 60,

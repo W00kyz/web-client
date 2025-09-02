@@ -75,15 +75,18 @@ export const templateRuleDataSource = {
 
 export interface Template {
   name: string;
-  rules: string[];
+  pattern_ids: string[];
 }
 
 export const templateDataSources = {
-  createOne: async (template: Template): Promise<void> => {
+  createOne: async (template: Template, token?: string): Promise<void> => {
     try {
-      const response = await fetch(`${API_URL}/document/template`, {
+      const response = await fetch(`${API_URL}/template`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify(template),
       });
 
@@ -92,6 +95,28 @@ export const templateDataSources = {
       }
     } catch (error) {
       console.error('Erro no createOne (Template):', error);
+      throw error;
+    }
+  },
+
+  getMany: async (token?: string): Promise<Template[]> => {
+    try {
+      const response = await fetch(`${API_URL}/template`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao pegar templates: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Erro no getMany (Template):', error);
       throw error;
     }
   },
