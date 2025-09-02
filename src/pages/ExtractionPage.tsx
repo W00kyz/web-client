@@ -8,22 +8,26 @@ import {
   Button,
   Box,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { FileUpload } from '@components/FileUpload';
 import { useMutation } from '@hooks/useMutation';
 import { useQuery } from '@hooks/useQuery';
 import { templateDataSources, Template } from '@datasources/template';
-import { API_URL } from '@constants/AppContants';
 import { useSession } from '@hooks/useSession';
+import { API_URL } from '@constants/AppContants';
 import imgPdf from '@assets/images/ImgPdf.png';
 
 async function sendExtractionRequest(args: {
-  template: string;
+  templateId: string;
   file: File;
   token?: string;
-}): Promise<string> {
+}): Promise<void> {
   const formData = new FormData();
-  formData.append('template_id', args.template);
+  formData.append('template_id', args.templateId);
   formData.append('file', args.file);
 
   const res = await fetch(`${API_URL}/document/process`, {
@@ -37,13 +41,12 @@ async function sendExtractionRequest(args: {
   if (!res.ok) {
     throw new Error('Falha ao enviar requisição');
   }
-
-  return res.text();
 }
 
 export const ExtractionPage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
   const { session } = useSession();
   const token = session?.user.token;
 
@@ -65,16 +68,13 @@ export const ExtractionPage = () => {
   const { mutate, isLoading: isSubmitting } = useMutation(
     sendExtractionRequest,
     {
-      onSuccess: (csv) => {
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'resultado.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+      onSuccess: () => {
+        setOpenDialog(true);
+        setSelectedFile(null);
+        setSelectedTemplate('');
+      },
+      onError: (err) => {
+        alert('Erro ao enviar documento: ' + err.message);
       },
     }
   );
@@ -82,9 +82,9 @@ export const ExtractionPage = () => {
   const handleSubmit = () => {
     if (!selectedTemplate || !selectedFile) return;
     mutate({
-      template: selectedTemplate,
+      templateId: selectedTemplate,
       file: selectedFile,
-      token: token,
+      token,
     });
   };
 
@@ -181,7 +181,7 @@ export const ExtractionPage = () => {
               Selecionar template
             </MenuItem>
             {templates?.map((template) => (
-              <MenuItem key={template.name} value={template.name}>
+              <MenuItem key={template.id} value={template.id}>
                 {template.name}
               </MenuItem>
             ))}
@@ -207,6 +207,20 @@ export const ExtractionPage = () => {
         >
           Enviar
         </Button>
+
+        {/* Dialog de confirmação */}
+        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+          <DialogTitle>Envio realizado</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Documento enviado com sucesso! Você receberá um e-mail com os
+              dados processados.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDialog(false)}>Fechar</Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
     </Container>
   );
