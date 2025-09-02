@@ -46,16 +46,16 @@ export const Crud = ({ rootPath }: { rootPath: string }) => {
   const renderedRoute = useMemo(() => {
     const isList = match(listPath, { end: true })(pathname);
     const matchCreate = match(createPath, { end: true })(pathname);
-    const matchEdit = match(editPath, { end: true })(pathname);
+    // const matchEdit = match(editPath, { end: true })(pathname);
     const matchShow = match(showPath, { end: true })(pathname);
 
     if (matchCreate) {
       return <CreateTemplate onCreate={handleCreate} />;
     }
 
-    if (matchEdit && typeof matchEdit.params.id === 'string') {
-      return <EditTemplates id={matchEdit.params.id} onEdit={handleEdit} />;
-    }
+    // if (matchEdit && typeof matchEdit.params.id === 'string') {
+    //   return <EditTemplates id={matchEdit.params.id} onEdit={handleEdit} />;
+    // }
 
     if (matchShow && typeof matchShow.params.id === 'string') {
       return <ShowTemplates id={matchShow.params.id} />;
@@ -66,7 +66,7 @@ export const Crud = ({ rootPath }: { rootPath: string }) => {
         <ListTemplates
           onRowClick={handleRowClick}
           onCreateClick={handleCreateClick}
-          onEditClick={handleEditClick}
+          // onEditClick={handleEditClick}
         />
       );
     }

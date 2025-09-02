@@ -18,14 +18,20 @@ import { fileUploadDataSource } from '@datasources/upload';
 import { templateDataSources } from '@datasources/template';
 import { useSession } from '@hooks/useSession';
 import { Label, LabelPanel } from '@components/LabelPanel';
+import { useNavigate } from 'react-router';
 
 export const CreateTemplate = () => {
   const [activeStep, setActiveStep] = useState(0);
+
+  const [templateId, setTemplateId] = useState<number | null>(null);
   const [templateName, setTemplateName] = useState('');
+  const [labels, setLabels] = useState<Label[]>([]);
+
   const [file, setFile] = useState<File | null>(null);
   const [uploadedHtml, setUploadedHtml] = useState<string>('');
-  const [labels, setLabels] = useState<Label[]>([]);
+
   const { session } = useSession();
+  const navigate = useNavigate();
 
   const {
     mutate: uploadFile,
@@ -36,21 +42,6 @@ export const CreateTemplate = () => {
     onError: (error) => alert('Erro no upload: ' + error.message),
   });
 
-  const { mutate: createTemplate, isLoading: isCreatingTemplate } = useMutation<
-    { name: string; pattern_ids: string[] },
-    void,
-    Error
-  >(
-    async (data) => templateDataSources.createOne(data, session?.user.token), // 🔹 token separado
-    {
-      onSuccess: () => alert('Template criado com sucesso!'),
-      onError: (err) => alert('Erro ao criar template: ' + err.message),
-    }
-  );
-
-  const handleNext = () => setActiveStep((prev) => prev + 1);
-  const handleBack = () => setActiveStep((prev) => prev - 1);
-
   const handleFileChange = (file: File | null) => {
     setFile(file);
     setUploadedHtml('');
@@ -60,18 +51,31 @@ export const CreateTemplate = () => {
     if (file) uploadFile({ file, token: session?.user.token });
   }, [file]);
 
-  const handleCreateTemplate = () => {
-    const sentLabels = labels.filter((l) => l.sent && l.pattern_id);
-    const pattern_ids = sentLabels.map((l) => l.pattern_id!.toString());
+  const { mutate: createTemplate, isLoading: isCreatingTemplate } = useMutation<
+    { name: string; pattern_ids: string[] },
+    { id: number },
+    Error
+  >(async (data) => templateDataSources.createOne(data, session?.user.token), {
+    onSuccess: (data) => setTemplateId(data.id),
+    onError: (err) => alert('Erro ao criar template: ' + err.message),
+  });
 
-    createTemplate(
-      { name: templateName, pattern_ids } // 🔹 apenas os dados do template
-    );
+  const handleNext = () => {
+    if (!templateId) {
+      createTemplate({ name: templateName, pattern_ids: [] });
+    }
+    setActiveStep((prev) => prev + 1);
+  };
+  const handleBack = () => setActiveStep((prev) => prev - 1);
+
+  const handleFinish = () => {
+    navigate('/templates');
   };
 
   return (
     <PageContainer>
       <Stack spacing={2}>
+        {/* Stepper */}
         <Stepper activeStep={activeStep} alternativeLabel>
           {['Informar dados do Template', 'Definir Rótulos'].map((label) => (
             <Step key={label}>
@@ -80,6 +84,7 @@ export const CreateTemplate = () => {
           ))}
         </Stepper>
 
+        {/* ── Etapa 1 ── */}
         {activeStep === 0 && (
           <Stack spacing={2}>
             <TextField
@@ -87,7 +92,7 @@ export const CreateTemplate = () => {
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
               fullWidth
-              disabled={isUploading}
+              disabled={isUploading || isCreatingTemplate}
             />
             <FileUpload file={file} onChange={handleFileChange} />
             {isUploading && (
@@ -96,25 +101,24 @@ export const CreateTemplate = () => {
                 <Typography>Enviando arquivo...</Typography>
               </Stack>
             )}
+            {uploadError && (
+              <Typography color="error">
+                {(uploadError as Error).message}
+              </Typography>
+            )}
             <Stack direction="row" spacing={1}>
               <Button
-                disabled={
-                  !templateName || !file || !uploadedHtml || isUploading
-                }
+                disabled={!templateName || isUploading || isCreatingTemplate}
                 variant="contained"
                 onClick={handleNext}
               >
                 Próximo
               </Button>
             </Stack>
-            {uploadError && (
-              <Typography color="error">
-                {(uploadError as Error).message}
-              </Typography>
-            )}
           </Stack>
         )}
 
+        {/* ── Etapa 2 ── */}
         {activeStep === 1 && (
           <Stack
             direction="row"
@@ -122,7 +126,7 @@ export const CreateTemplate = () => {
             alignItems="flex-start"
             sx={{ mt: 2 }}
           >
-            <Stack>
+            <Stack flex={1}>
               <HtmlHighlighter
                 nameFile={file?.name ?? ''}
                 htmlContent={uploadedHtml}
@@ -133,14 +137,10 @@ export const CreateTemplate = () => {
                 </Button>
                 <Button
                   variant="contained"
-                  onClick={handleCreateTemplate}
-                  disabled={
-                    labels.some((l) => !l.sent) ||
-                    !templateName ||
-                    isCreatingTemplate
-                  }
+                  onClick={handleFinish}
+                  disabled={labels.some((l) => !l.sent)}
                 >
-                  {isCreatingTemplate ? 'Salvando...' : 'Salvar'}
+                  Salvar
                 </Button>
               </Stack>
             </Stack>

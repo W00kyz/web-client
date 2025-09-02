@@ -79,7 +79,10 @@ export interface Template {
 }
 
 export const templateDataSources = {
-  createOne: async (template: Template, token?: string): Promise<void> => {
+  createOne: async (
+    template: Template,
+    token?: string
+  ): Promise<{ id: number }> => {
     try {
       const response = await fetch(`${API_URL}/template`, {
         method: 'POST',
@@ -93,6 +96,9 @@ export const templateDataSources = {
       if (!response.ok) {
         throw new Error(`Erro ao salvar template: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      return result;
     } catch (error) {
       console.error('Erro no createOne (Template):', error);
       throw error;
