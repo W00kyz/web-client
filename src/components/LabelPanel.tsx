@@ -98,7 +98,16 @@ const LabelCard = ({
             sx={{ fontWeight: 600 }}
             disabled={label.sent}
           />
-          {isSection && <Chip label="Seção" size="small" color="secondary" />}
+          {isSection && (
+            <Tooltip title="Bloco que reúne os dados de uma pessoa ou item, por exemplo: funcionário com nome, CPF, salário e outras informações.">
+              <Chip
+                label="Seção"
+                size="small"
+                color="secondary"
+                sx={{ cursor: 'pointer' }}
+              />
+            </Tooltip>
+          )}
         </Stack>
 
         <Stack direction="row">

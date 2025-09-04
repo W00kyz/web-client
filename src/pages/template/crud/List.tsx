@@ -36,8 +36,8 @@ export const ListTemplates = ({
 
   // Monta as linhas da tabela
   const rows =
-    templates?.map((t, index) => ({
-      id: t.name + index, // se houver id real do backend, substitua
+    templates?.map((t) => ({
+      id: t.id,
       title: t.name,
     })) ?? [];
 
