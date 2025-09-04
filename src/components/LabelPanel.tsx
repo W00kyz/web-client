@@ -1,76 +1,125 @@
 // LabelPanel.tsx
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
-  Button,
-  Chip,
-  Collapse,
-  Divider,
-  IconButton,
   Paper,
   Stack,
-  TextField,
-  Typography,
+  Divider,
   InputBase,
+  IconButton,
+  Collapse,
+  Box,
+  Chip,
+  Button,
+  TextField,
   Tooltip,
+  Typography,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoIcon from '@mui/icons-material/Info';
 import { TransitionGroup } from 'react-transition-group';
-import { useLabelExampleContext, ExampleItem } from '@hooks/useLabelExample';
 import { useMutation } from '@hooks/useMutation';
 import {
+  templateRuleDataSource,
   CreatedRule,
   CreateRuleInput,
-  templateRuleDataSource,
 } from '@datasources/template';
-import InfoIcon from '@mui/icons-material/Info';
 import { useSession } from '@hooks/useSession';
 
+export interface Label {
+  name: string;
+  description: string;
+  id: number;
+  pattern_id?: number;
+  sent?: boolean;
+}
+
+interface LabelPanelProps {
+  templateName: string;
+  setTemplateName: (name: string) => void;
+  onLabelsChange: (labels: Label[]) => void;
+}
+
 interface LabelCardProps {
-  title: string;
-  examples: ExampleItem[];
-  isSection?: boolean;
-  disabledSend?: boolean;
+  label: Label;
   loading?: boolean;
-  error?: string | null;
   onSend: () => void;
-  onRemoveExample?: (idx: number) => void;
   onRemoveLabel?: () => void;
+  onChangeDescription?: (desc: string) => void;
+  onChangeName?: (name: string) => void;
+  focusName?: boolean;
+  isSection?: boolean;
+  deleting?: boolean;
 }
 
 const LabelCard = ({
-  title,
-  examples,
-  isSection,
-  disabledSend,
+  label,
   loading,
-  error,
   onSend,
-  onRemoveExample,
   onRemoveLabel,
+  onChangeDescription,
+  onChangeName,
+  focusName,
+  isSection,
+  deleting,
 }: LabelCardProps) => {
-  const [expanded, setExpanded] = React.useState(true);
+  const [expanded, setExpanded] = useState(!label.sent);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focusName) nameInputRef.current?.focus();
+  }, [focusName]);
+
+  useEffect(() => {
+    if (label.sent) setExpanded(false);
+  }, [label.sent]);
 
   return (
     <Stack padding={1}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography fontFamily={"'Roboto', sans-serif"}>{title}</Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        spacing={1}
+      >
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          flexGrow={1}
+          px={1}
+        >
+          <InputBase
+            value={label.name}
+            onChange={(e) => onChangeName?.(e.target.value)}
+            inputRef={nameInputRef}
+            sx={{ fontWeight: 600 }}
+            disabled={label.sent}
+          />
           {isSection && (
-            <Chip
-              label="Seção"
-              size="small"
-              color="secondary"
-              variant="filled"
-            />
+            <Tooltip title="Bloco que reúne os dados de uma pessoa ou item, por exemplo: funcionário com nome, CPF, salário e outras informações.">
+              <Chip
+                label="Seção"
+                size="small"
+                color="secondary"
+                sx={{ cursor: 'pointer' }}
+              />
+            </Tooltip>
           )}
         </Stack>
+
         <Stack direction="row">
-          <IconButton size="small" onClick={() => setExpanded((prev) => !prev)}>
-            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          </IconButton>
-          <IconButton size="small" onClick={onRemoveLabel} disabled={loading}>
+          {!label.sent && (
+            <IconButton
+              size="small"
+              onClick={() => setExpanded((prev) => !prev)}
+            >
+              {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </IconButton>
+          )}
+          <IconButton size="small" onClick={onRemoveLabel} disabled={deleting}>
             <CloseIcon />
           </IconButton>
         </Stack>
@@ -78,43 +127,28 @@ const LabelCard = ({
 
       <Collapse in={expanded} timeout={300} unmountOnExit>
         <Stack gap={1} marginTop={1}>
-          <TransitionGroup>
-            {examples.map((example, idx) => (
-              <Collapse key={idx} timeout={300}>
-                <Stack direction="column" spacing={0.5} sx={{ mb: 1 }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
-                      value={example.values}
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      slotProps={{ input: { readOnly: true } }}
-                    />
-                    <IconButton
-                      size="small"
-                      color="inherit"
-                      onClick={() => onRemoveExample?.(idx)}
-                      disabled={loading}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
-                </Stack>
-              </Collapse>
-            ))}
-          </TransitionGroup>
-
-          {error && (
-            <Typography color="error" variant="body2">
-              {error}
-            </Typography>
-          )}
+          <TextField
+            value={label.description}
+            onChange={(e) => onChangeDescription?.(e.target.value)}
+            variant="outlined"
+            size="small"
+            fullWidth
+            multiline
+            minRows={3}
+            placeholder="Descrição do rótulo"
+            disabled={label.sent}
+          />
 
           <Button
             color="primary"
             variant="contained"
             onClick={onSend}
-            disabled={disabledSend || loading}
+            disabled={
+              loading ||
+              label.sent ||
+              !label.description.trim() ||
+              !label.name.trim()
+            }
           >
             {loading ? 'Enviando...' : 'Enviar'}
           </Button>
@@ -124,21 +158,19 @@ const LabelCard = ({
   );
 };
 
-interface LabelPanelProps {
-  templateName: string;
-  setTemplateName: (name: string) => void;
-  onNewRegex: (regex: string) => void;
-}
-
 export const LabelPanel = ({
   templateName,
   setTemplateName,
-  onNewRegex,
+  onLabelsChange,
 }: LabelPanelProps) => {
-  const { labels, removeExample, removeLabel } = useLabelExampleContext();
   const { session } = useSession();
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [currentSendingLabel, setCurrentSendingLabel] = useState<string | null>(
+    null
+  );
+  const nextId = useRef(0);
 
-  const { mutate, isLoading, error } = useMutation<
+  const { mutate, isLoading } = useMutation<
     { data: CreateRuleInput; token?: string },
     CreatedRule,
     Error
@@ -146,107 +178,145 @@ export const LabelPanel = ({
     templateRuleDataSource.createOne({ data, token })
   );
 
-  const [currentSendingLabel, setCurrentSendingLabel] = React.useState<
-    string | null
-  >(null);
+  const { mutate: mutateDelete, isLoading: isDeleting } = useMutation<
+    { id: number; token?: string },
+    void,
+    Error
+  >(async ({ id, token }) => templateRuleDataSource.deleteOne({ id, token }));
 
-  const handleRemoveExample = (labelKey: string, idx: number) => {
-    removeExample(labelKey, idx);
+  const handleAddLabel = () => {
+    if (labels.some((l) => !l.sent)) return;
+
+    const newLabel: Label = {
+      name: `Novo Rótulo ${labels.length + 1}`,
+      description: '',
+      id: nextId.current++,
+    };
+    setLabels((prev) => [...prev, newLabel]);
   };
 
-  const handleRemoveLabel = (labelKey: string) => {
-    onNewRegex(''); // Limpa o regex ao remover o rótulo
-    setTimeout(() => {
-      removeLabel(labelKey);
-    }, 300);
+  const handleRemoveLabel = (label: Label) => {
+    if (label.sent && label.pattern_id) {
+      mutateDelete(
+        { id: label.pattern_id, token: session?.user.token },
+        {
+          onSuccess: () =>
+            setLabels((prev) => prev.filter((l) => l.id !== label.id)),
+        }
+      );
+    } else {
+      setLabels((prev) => prev.filter((l) => l.id !== label.id));
+    }
   };
 
-  const handleSendClick = async (
-    labelKey: string,
-    examples: ExampleItem[],
-    isSection?: boolean
-  ) => {
-    setCurrentSendingLabel(labelKey);
+  const handleChangeDescription = (id: number, desc: string) => {
+    setLabels((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, description: desc } : l))
+    );
+  };
 
-    const formattedData = {
-      documentId: 1,
+  const handleChangeName = (id: number, name: string) => {
+    setLabels((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)));
+  };
+
+  const handleSendLabel = async (label: Label, isSection?: boolean) => {
+    setCurrentSendingLabel(label.name);
+
+    const formattedData: CreateRuleInput = {
+      templateId: 1,
       isSection: isSection ?? false,
-      key: labelKey,
-      selections: examples.map((ex) => ({
-        values: ex.values,
-        context: ex.context,
-      })),
+      name: label.name,
+      description: label.description,
     };
 
     await mutate(
-      {
-        data: formattedData,
-        token: session?.user.token,
-      },
+      { data: formattedData, token: session?.user.token },
       {
         onError: () => setCurrentSendingLabel(null),
         onSuccess: (data) => {
           setCurrentSendingLabel(null);
-          if (data?.pattern) {
-            onNewRegex(data.pattern);
-          }
+          setLabels((prev) =>
+            prev.map((l) =>
+              l.id === label.id ? { ...l, sent: true, pattern_id: data.id } : l
+            )
+          );
         },
       }
     );
   };
 
-  const labelKeys = Object.keys(labels);
+  useEffect(() => {
+    onLabelsChange(labels);
+  }, [labels]);
+
+  const hasPendingLabel = labels.some((l) => !l.sent);
 
   return (
     <Paper variant="outlined" sx={{ minWidth: 300 }}>
       <Stack>
         <Stack
-          direction={'row'}
+          direction="row"
           spacing={1}
-          alignItems={'center'}
+          alignItems="center"
           marginX={2}
-          marginY={labelKeys.length > 0 ? 0 : 1}
+          marginY={labels.length > 0 ? 0 : 1}
         >
-          <Tooltip title="Rótulos são nomes para identificar dados relacionados, agrupam exemplos que são utilizados para extração de dados.">
+          <Tooltip title="Rótulos são nomes para identificar dados relacionados, cada rótulo possui uma descrição.">
             <InfoIcon style={{ cursor: 'pointer' }} />
           </Tooltip>
           <InputBase
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
             placeholder="Digite o nome do template"
-            sx={{
-              fontFamily: "'Roboto', sans-serif",
-              fontSize: '1.25rem',
-              fontWeight: 500,
-            }}
             fullWidth
           />
         </Stack>
 
-        {labelKeys.length > 0 && <Divider sx={{ my: 1 }} />}
+        {labels.length > 0 && <Divider sx={{ my: 1 }} />}
 
         <TransitionGroup>
-          {labelKeys.map((key, index) => (
-            <Collapse key={key} timeout={300}>
+          {labels.map((label, index) => (
+            <Collapse key={label.id} timeout={300}>
               <LabelCard
-                title={key}
-                examples={labels[key].examples}
+                label={label}
                 isSection={index === 0}
-                disabledSend={labels[key].examples.length === 0}
-                loading={isLoading && currentSendingLabel === key}
-                error={
-                  currentSendingLabel === key ? (error?.message ?? null) : null
+                loading={isLoading && currentSendingLabel === label.name}
+                deleting={isDeleting && label.sent}
+                onSend={() => handleSendLabel(label, index === 0)}
+                onRemoveLabel={() => handleRemoveLabel(label)}
+                onChangeDescription={(desc) =>
+                  handleChangeDescription(label.id, desc)
                 }
-                onRemoveExample={(idx) => handleRemoveExample(key, idx)}
-                onSend={() =>
-                  handleSendClick(key, labels[key].examples, index === 0)
+                onChangeName={(name) => handleChangeName(label.id, name)}
+                focusName={
+                  label.description === '' && index === labels.length - 1
                 }
-                onRemoveLabel={() => handleRemoveLabel(key)}
               />
-              {index < labelKeys.length - 1 && <Divider sx={{ my: 1 }} />}
+              {index < labels.length - 1 && <Divider sx={{ my: 1 }} />}
             </Collapse>
           ))}
         </TransitionGroup>
+
+        <Divider sx={{ my: 1, marginBottom: 0 }} />
+
+        <Box
+          onClick={handleAddLabel}
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            cursor: hasPendingLabel ? 'not-allowed' : 'pointer',
+            px: 2,
+            py: 1,
+            '&:hover': {
+              backgroundColor: hasPendingLabel ? 'inherit' : 'action.hover',
+            },
+            opacity: hasPendingLabel ? 0.5 : 1,
+          }}
+        >
+          <Typography color="primary">Adicionar Rótulo</Typography>
+          <AddIcon color="primary" />
+        </Box>
       </Stack>
     </Paper>
   );

@@ -1,10 +1,7 @@
 // LabelExampleContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export interface ExampleItem {
-  values: string;
-  context: string[];
-}
+export type ExampleItem = string;
 
 export interface LabelData {
   examples: ExampleItem[];

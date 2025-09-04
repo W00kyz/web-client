@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { LabelExampleProvider } from '@hooks/useLabelExample';
+// CreateTemplate.tsx
+import { useState, useEffect } from 'react';
 import {
   Stack,
   Stepper,
@@ -11,131 +11,148 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { PageContainer } from '@toolpad/core';
-
-import { fileUploadDataSource } from '@datasources/upload';
-import { useMutation } from '@hooks/useMutation';
-import { MarkdownHighlighter } from '@components/MarkdownHighlighter';
-import { LabelPanel } from '@components/LabelPanel';
-import { useSession } from '@hooks/useSession';
 import { FileUpload } from '@components/FileUpload';
+import { HtmlHighlighter } from '@components/MarkdownHighlighter';
+import { useMutation } from '@hooks/useMutation';
+import { fileUploadDataSource } from '@datasources/upload';
+import { templateDataSources } from '@datasources/template';
+import { useSession } from '@hooks/useSession';
+import { Label, LabelPanel } from '@components/LabelPanel';
+import { useNavigate } from 'react-router';
 
 export const CreateTemplate = () => {
   const [activeStep, setActiveStep] = useState(0);
+
+  const [templateId, setTemplateId] = useState<number | null>(null);
   const [templateName, setTemplateName] = useState('');
+  const [labels, setLabels] = useState<Label[]>([]);
+
   const [file, setFile] = useState<File | null>(null);
-  const [uploadedMd, setUploadedMd] = useState<string>('');
-  const [regex, setRegex] = useState<string | null>(null);
+  const [uploadedHtml, setUploadedHtml] = useState<string>('');
+
   const { session } = useSession();
+  const navigate = useNavigate();
 
-  const { mutate, isLoading, error } = useMutation(
-    fileUploadDataSource.uploadFile,
-    {
-      onSuccess: (data) => {
-        setUploadedMd(data.document_md);
-      },
-      onError: (error) => {
-        alert('Erro no upload: ' + error.message);
-      },
-    }
-  );
+  const {
+    mutate: uploadFile,
+    isLoading: isUploading,
+    error: uploadError,
+  } = useMutation(fileUploadDataSource.uploadFile, {
+    onSuccess: (data) => setUploadedHtml(data.document_md),
+    onError: (error) => alert('Erro no upload: ' + error.message),
+  });
 
-  const handleNext = () => setActiveStep((prev) => prev + 1);
-  const handleBack = () => setActiveStep((prev) => prev - 1);
-
-  // Aqui: handleFileChange recebe arquivo direto
   const handleFileChange = (file: File | null) => {
     setFile(file);
-    setUploadedMd('');
-    setRegex(null);
+    setUploadedHtml('');
   };
 
   useEffect(() => {
-    if (file) {
-      mutate({ file, token: session?.user.token });
-    }
+    if (file) uploadFile({ file, token: session?.user.token });
   }, [file]);
+
+  const { mutate: createTemplate, isLoading: isCreatingTemplate } = useMutation<
+    { name: string; pattern_ids: string[] },
+    { id: number },
+    Error
+  >(async (data) => templateDataSources.createOne(data, session?.user.token), {
+    onSuccess: (data) => setTemplateId(data.id),
+    onError: (err) => alert('Erro ao criar template: ' + err.message),
+  });
+
+  const handleNext = () => {
+    if (!templateId) {
+      createTemplate({ name: templateName, pattern_ids: [] });
+    }
+    setActiveStep((prev) => prev + 1);
+  };
+  const handleBack = () => setActiveStep((prev) => prev - 1);
+
+  const handleFinish = () => {
+    navigate('/templates');
+  };
 
   return (
     <PageContainer>
-      <LabelExampleProvider>
-        <Stack spacing={2}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {['Informar dados do Template', 'Definir Rótulos'].map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
+      <Stack spacing={2}>
+        {/* Stepper */}
+        <Stepper activeStep={activeStep} alternativeLabel>
+          {['Informar dados do Template', 'Definir Rótulos'].map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-          {activeStep === 0 && (
-            <Stack spacing={2}>
-              <TextField
-                label="Nome do Template"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                fullWidth
-                disabled={isLoading}
+        {/* ── Etapa 1 ── */}
+        {activeStep === 0 && (
+          <Stack spacing={2}>
+            <TextField
+              label="Nome do Template"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              fullWidth
+              disabled={isUploading || isCreatingTemplate}
+            />
+            <FileUpload file={file} onChange={handleFileChange} />
+            {isUploading && (
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <CircularProgress size={24} />
+                <Typography>Enviando arquivo...</Typography>
+              </Stack>
+            )}
+            {uploadError && (
+              <Typography color="error">
+                {(uploadError as Error).message}
+              </Typography>
+            )}
+            <Stack direction="row" spacing={1}>
+              <Button
+                disabled={!templateName || isUploading || isCreatingTemplate}
+                variant="contained"
+                onClick={handleNext}
+              >
+                Próximo
+              </Button>
+            </Stack>
+          </Stack>
+        )}
+
+        {/* ── Etapa 2 ── */}
+        {activeStep === 1 && (
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="flex-start"
+            sx={{ mt: 2 }}
+          >
+            <Stack flex={1}>
+              <HtmlHighlighter
+                nameFile={file?.name ?? ''}
+                htmlContent={uploadedHtml}
               />
-              <FileUpload file={file} onChange={handleFileChange} />
-              {isLoading && (
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <CircularProgress size={24} />
-                  <Typography>Enviando arquivo...</Typography>
-                </Stack>
-              )}
-              <Stack direction="row" spacing={1}>
+              <Stack direction="row" justifyContent="center" spacing={2} my={1}>
+                <Button onClick={handleBack} variant="outlined">
+                  Voltar
+                </Button>
                 <Button
-                  disabled={!templateName || !file || isLoading || !uploadedMd}
                   variant="contained"
-                  onClick={handleNext}
+                  onClick={handleFinish}
+                  disabled={labels.some((l) => !l.sent)}
                 >
-                  Próximo
+                  Salvar
                 </Button>
               </Stack>
-              {error && (
-                <Typography color="error">
-                  Erro: {(error as Error).message}
-                </Typography>
-              )}
             </Stack>
-          )}
 
-          {activeStep === 1 && (
-            <Stack>
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="flex-start"
-                sx={{ mt: 2 }}
-              >
-                <Stack>
-                  <MarkdownHighlighter
-                    nameFile={file?.name ?? ''}
-                    markdownContent={uploadedMd}
-                    highlightRegex={regex}
-                  />
-                  <Stack
-                    direction={'row'}
-                    justifyContent={'center'}
-                    spacing={2}
-                    my={1}
-                  >
-                    <Button onClick={handleBack} variant="outlined">
-                      Voltar
-                    </Button>
-                    <Button variant="contained">Salvar</Button>
-                  </Stack>
-                </Stack>
-                <LabelPanel
-                  templateName={templateName}
-                  setTemplateName={setTemplateName}
-                  onNewRegex={(newRegex) => setRegex(newRegex)}
-                />
-              </Stack>
-            </Stack>
-          )}
-        </Stack>
-      </LabelExampleProvider>
+            <LabelPanel
+              templateName={templateName}
+              setTemplateName={setTemplateName}
+              onLabelsChange={setLabels}
+            />
+          </Stack>
+        )}
+      </Stack>
     </PageContainer>
   );
 };

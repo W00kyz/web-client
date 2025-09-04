@@ -6,8 +6,9 @@ export interface Selection {
 }
 
 export interface CreateRuleInput {
-  documentId: number;
-  selections: Selection[];
+  templateId: number;
+  name: string;
+  description: string;
   isSection?: boolean;
 }
 
@@ -30,8 +31,7 @@ export const templateRuleDataSource = {
     token?: string;
   }): Promise<CreatedRule> => {
     try {
-      console.log(data);
-      const response = await fetch(`${API_URL}/document/generate-pattern`, {
+      const response = await fetch(`${API_URL}/document/create-pattern`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,25 +46,28 @@ export const templateRuleDataSource = {
 
       const result = await response.json();
       return result as CreatedRule;
-
-      // MOCK temporário (se quiser usar, comente o fetch acima)
-      /*
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            id: 123,
-            user_id: 1,
-            document_id: data.documentId,
-            name: data.selections[0]?.key || 'mockRule',
-            is_section: data.isSection || false,
-            pattern: 'conteúdo',
-            created_at: new Date().toISOString(),
-          });
-        }, 300);
-      });
-      */
     } catch (error) {
       console.error('Erro no createOne (Rule):', error);
+      throw error;
+    }
+  },
+
+  deleteOne: async ({ id, token }: { id: number; token?: string }) => {
+    try {
+      const response = await fetch(`${API_URL}/document/delete-pattern/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao deletar regex: ${response.statusText}`);
+      }
+      return;
+    } catch (error) {
+      console.error('Erro no deleteOne (Rule):', error);
       throw error;
     }
   },
@@ -72,23 +75,54 @@ export const templateRuleDataSource = {
 
 export interface Template {
   name: string;
-  rules: string[];
+  pattern_ids: string[];
 }
 
 export const templateDataSources = {
-  createOne: async (template: Template): Promise<void> => {
+  createOne: async (
+    template: Template,
+    token?: string
+  ): Promise<{ id: number }> => {
     try {
-      const response = await fetch(`${API_URL}/document/template`, {
+      const response = await fetch(`${API_URL}/template`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify(template),
       });
 
       if (!response.ok) {
         throw new Error(`Erro ao salvar template: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      return result;
     } catch (error) {
       console.error('Erro no createOne (Template):', error);
+      throw error;
+    }
+  },
+
+  getMany: async (token?: string): Promise<Template[]> => {
+    try {
+      const response = await fetch(`${API_URL}/template`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao pegar templates: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Erro no getMany (Template):', error);
       throw error;
     }
   },
