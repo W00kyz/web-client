@@ -8,29 +8,7 @@ export const fileUploadDataSource = {
     file: File;
     token?: string;
   }): Promise<{ document_md: string }> => {
-    // // Mock temporário: simula delay e resposta
-    // await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // // Retorno mock
-    // return {
-    //   document_md: `# Documento mock para arquivo: ${file.name}\n\nConteúdo do arquivo processado mock.`,
-    // };
-
-    // Para usar requisição real, descomente o código abaixo e remova o mock:
     try {
-      const response1 = await fetch(`${API_URL}/template`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: JSON.stringify({ 
-          name: "Extrato",
-          pattern_ids: []  // lista vazia se não houver padrões
-        }),
-      });
-
-
       const formData = new FormData();
       formData.append('file', file);
 
