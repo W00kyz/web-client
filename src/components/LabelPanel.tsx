@@ -37,6 +37,7 @@ export interface Label {
 }
 
 interface LabelPanelProps {
+  templateId: number;
   templateName: string;
   setTemplateName: (name: string) => void;
   onLabelsChange: (labels: Label[]) => void;
@@ -159,6 +160,7 @@ const LabelCard = ({
 };
 
 export const LabelPanel = ({
+  templateId,
   templateName,
   setTemplateName,
   onLabelsChange,
@@ -223,7 +225,7 @@ export const LabelPanel = ({
     setCurrentSendingLabel(label.name);
 
     const formattedData: CreateRuleInput = {
-      templateId: 1,
+      templateId: templateId,
       isSection: isSection ?? false,
       name: label.name,
       description: label.description,
