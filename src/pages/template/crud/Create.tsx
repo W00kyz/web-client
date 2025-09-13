@@ -146,6 +146,7 @@ export const CreateTemplate = () => {
             </Stack>
 
             <LabelPanel
+              templateId={templateId}
               templateName={templateName}
               setTemplateName={setTemplateName}
               onLabelsChange={setLabels}
